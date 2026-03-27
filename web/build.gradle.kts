@@ -20,9 +20,6 @@ kotlin {
 
     sourceSets {
         wasmJsMain.dependencies {
-            // Shared protocol models
-            implementation(project(":shared"))
-
             // Compose Multiplatform
             implementation(compose.runtime)
             implementation(compose.foundation)
