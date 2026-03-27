@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+*.gradle.kts.bak
+
+# IDE
+.idea/
+.DS_Store
+*.swp
+*.iml
+out/
+
+# Local configuration
+local.properties
+.env
+.env.local
+
+# WASM/Node
+node_modules/
+.node_modules/
+kotlin-js-store/
+
+# Build artifacts
+*.wasm
+*.js.map
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/
