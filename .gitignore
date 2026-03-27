@@ -10,10 +10,18 @@ build/
 *.iml
 out/
 
-# Local configuration
+# Local configuration & secrets
 local.properties
+gradle.properties.local
 .env
 .env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.jks
+credentials.json
+firebase-key.json
 
 # WASM/Node
 node_modules/
