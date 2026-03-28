@@ -19,6 +19,12 @@ kotlin {
     }
 }
 
+// Pin Node.js to v22 LTS — Vercel's Linux env lacks libatomic.so.1 needed by Node v25
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+rootProject.extensions.findByType(org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec::class.java)?.apply {
+    version.set("22.12.0")
+}
+
 // Override binaryen version - default 123 doesn't exist on GitHub releases
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 rootProject.extensions.findByName("wasmJsBinaryenSpec")?.let {
