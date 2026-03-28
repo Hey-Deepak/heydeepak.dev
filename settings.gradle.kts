@@ -45,8 +45,8 @@ dependencyResolutionManagement {
         exclusiveContent {
             forRepository {
                 ivy("https://github.com/WebAssembly/binaryen/releases/download") {
-                    name = "Binaryen Distributions at WebAssembly/binaryen/releases/download"
-                    patternLayout { artifact("version_[revision]/[artifact]-[revision]-[classifier].tar.gz") }
+                    name = "Distributions at https://github.com/WebAssembly/binaryen/releases/download"
+                    patternLayout { artifact("version_[revision]/[artifact]-version_[revision]-[classifier].tar.gz") }
                     metadataSources { artifact() }
                     content { includeModule("com.github.webassembly", "binaryen") }
                 }

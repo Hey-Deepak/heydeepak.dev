@@ -17,7 +17,16 @@ kotlin {
         }
         binaries.executable()
     }
+}
 
+// Override binaryen version - default 123 doesn't exist on GitHub releases
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+rootProject.extensions.findByName("wasmJsBinaryenSpec")?.let {
+    @Suppress("DEPRECATION_ERROR")
+    (it as org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenEnvSpec).version.set("128")
+}
+
+kotlin {
     sourceSets {
         wasmJsMain.dependencies {
             // Required npm dependency for kotlinx-datetime (transitive from Ktor)
