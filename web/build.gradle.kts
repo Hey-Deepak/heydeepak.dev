@@ -20,6 +20,9 @@ kotlin {
 
     sourceSets {
         wasmJsMain.dependencies {
+            // Required npm dependency for kotlinx-datetime (transitive from Ktor)
+            implementation(npm("@js-joda/core", "5.6.1"))
+
             // Compose Multiplatform
             implementation(compose.runtime)
             implementation(compose.foundation)
