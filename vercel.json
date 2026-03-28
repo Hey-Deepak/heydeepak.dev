@@ -1,5 +1,5 @@
 {
-  "buildCommand": "./gradlew :web:build",
+  "buildCommand": "GRADLE_OPTS='-Xmx2g' NODE_OPTIONS='--max-old-space-size=4096' ./gradlew :web:wasmJsBrowserDistribution",
   "outputDirectory": "web/build/dist/wasmJs/productionExecutable",
   "env": {
     "NODE_ENV": "production"
