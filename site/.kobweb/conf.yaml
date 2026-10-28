@@ -1,0 +1,14 @@
+site:
+  title: "Deepak Choudhary — Android & Real-time SDK Tech Lead"
+
+server:
+  files:
+    dev:
+      contentRoot: "build/processedResources/js/main/public"
+      script: "build/kotlin-webpack/js/developmentExecutable/heydeepak.js"
+      api: "build/libs/heydeepak.jar"
+    prod:
+      script: "build/kotlin-webpack/js/productionExecutable/heydeepak.js"
+      siteRoot: ".kobweb/site"
+
+  port: 8101

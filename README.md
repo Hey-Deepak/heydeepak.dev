@@ -1,42 +1,25 @@
 # heydeepak.dev
 
-**Personal portfolio of Deepak** — Android Engineer, Builder, #BuildInPublic
+Personal site of Deepak, built with Kotlin and Compose HTML via [Kobweb](https://github.com/varabyte/kobweb) 0.25.1. The static export puts real HTML in the page source.
 
-🚧 **Under Construction** — Actively building this in public. Check back regularly for updates.
+## Commands
 
----
+```bash
+# Static export -> site/.kobweb/site (uses the installed Chrome for snapshots)
+./scripts/export.sh
 
-## About
+# Preview the export at http://127.0.0.1:8100
+python3 -m http.server 8100 --bind 127.0.0.1 -d site/.kobweb/site
 
-Senior Android Engineer with 6+ years of experience building:
-- **Android SDKs** (WebRTC, real-time communication)
-- **Mobile apps** (Kotlin, Jetpack Compose, KMP)
-- **Backend systems** (Ktor, databases, APIs)
-- **AI integrations** (MCP protocol, agent pipelines)
+# Live-reload dev server on :8101
+./gradlew :site:kobwebStart -t
+./gradlew :site:kobwebStop
+```
 
-Currently building **Buddy** — a personal AI assistant for your phone that manages AI agents on your computer.
+## Layout
 
----
+- `site/src/jsMain/kotlin/dev/heydeepak/site/` - pages, components and `Content.kt` (every fact on the page)
+- `site/src/jsMain/resources/public/` - static files and CSS
+- `site/build.gradle.kts` - `<head>` tags (title, description, Open Graph)
 
-## Work in Progress
-
-This portfolio is being built in public. I'm gradually adding:
-- Detailed project case studies
-- Technical deep-dives
-- Lessons learned from building products
-- Experimental projects
-
-Check back for more.
-
----
-
-## Find Me
-
-- **GitHub:** [Hey-Deepak](https://github.com/Hey-Deepak)
-- **LinkedIn:** [heydeepak](https://linkedin.com/in/heydeepak)
-- **Current Work:** [VideoSDK.live](https://videosdk.live)
-- **Building:** [Buddy](https://github.com/Hey-Deepak/Buddy)
-
----
-
-**Built with Kotlin/WASM + Compose Multiplatform**
+See [SECURITY.md](SECURITY.md) before committing.

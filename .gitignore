@@ -1,21 +1,28 @@
-# Gradle
-.gradle/
+# General
+.DS_Store
+Thumbs.db
 build/
-*.gradle.kts.bak
+out/
+kotlin-js-store/
 
 # IDE
 .idea/
-.DS_Store
-*.swp
 *.iml
-out/
+/*.ipr
+*.swp
 
-# Local configuration & secrets
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+
+# Secrets and local config
 local.properties
 gradle.properties.local
 .env
 .env.local
 .env.*.local
+.mcp.json
+.claude/
 *.key
 *.pem
 *.p12
@@ -23,20 +30,8 @@ gradle.properties.local
 credentials.json
 firebase-key.json
 
-# WASM/Node
-node_modules/
-.node_modules/
-kotlin-js-store/
-
-# Build artifacts
-*.wasm
-*.js.map
-dist/
-
-# OS
-.DS_Store
-Thumbs.db
+# Local files
+*.pdf
 
 # Vercel
 .vercel/
-.mcp.json
