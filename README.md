@@ -1,42 +1,39 @@
 # heydeepak.dev
 
-**Personal portfolio of Deepak** — Android Engineer, Builder, #BuildInPublic
+Personal site of Deepak, built with Kotlin and Compose HTML via [Kobweb](https://github.com/varabyte/kobweb) 0.25.1. The static export puts real HTML in the page source.
 
-🚧 **Under Construction** — Actively building this in public. Check back regularly for updates.
+## Commands
 
----
+```bash
+# Static export -> site/.kobweb/site (uses the installed Chrome; override with KOBWEB_EXPORT_BROWSER_PATH)
+./scripts/export.sh
 
-## About
+# Preview the export at http://127.0.0.1:8100
+python3 -m http.server 8100 --bind 127.0.0.1 -d site/.kobweb/site
 
-Senior Android Engineer with 6+ years of experience building:
-- **Android SDKs** (WebRTC, real-time communication)
-- **Mobile apps** (Kotlin, Jetpack Compose, KMP)
-- **Backend systems** (Ktor, databases, APIs)
-- **AI integrations** (MCP protocol, agent pipelines)
+# Content, SEO and (with --links) link checks, then the checker's unit tests
+python3 scripts/check_site.py site/.kobweb/site --links
+python3 -m unittest discover -s scripts
 
-Currently building **Buddy** — a personal AI assistant for your phone that manages AI agents on your computer.
+# Live-reload dev server on :8101
+./gradlew :site:kobwebStart -t
+./gradlew :site:kobwebStop
+```
 
----
+## Updating the resume
 
-## Work in Progress
+The PDF is a GitHub Release asset, never committed. Uploading doesn't redeploy, so run the workflow after:
 
-This portfolio is being built in public. I'm gradually adding:
-- Detailed project case studies
-- Technical deep-dives
-- Lessons learned from building products
-- Experimental projects
+```bash
+gh release upload resume resume.pdf --clobber
+gh workflow run "Deploy site"
+```
 
-Check back for more.
+## Layout
 
----
+- `site/src/jsMain/kotlin/dev/heydeepak/site/` - pages, components and `Content.kt` (every fact on the page)
+- `site/src/jsMain/resources/public/` - static files and CSS
+- `site/build.gradle.kts` - `<head>` tags (description, Open Graph, JSON-LD) in `SiteMeta`
+- `site/.kobweb/conf.yaml` - the `<title>`, which must equal `SiteMeta.TITLE`
 
-## Find Me
-
-- **GitHub:** [Hey-Deepak](https://github.com/Hey-Deepak)
-- **LinkedIn:** [heydeepak](https://linkedin.com/in/heydeepak)
-- **Current Work:** [VideoSDK.live](https://videosdk.live)
-- **Building:** [Buddy](https://github.com/Hey-Deepak/Buddy)
-
----
-
-**Built with Kotlin/WASM + Compose Multiplatform**
+See [SECURITY.md](SECURITY.md) before committing.

@@ -1,0 +1,20 @@
+Deepak
+SDE 3 · Tech Lead, Client SDKs
+choudharydeepak990@gmail.com
+MOBILE · REAL-TIME VIDEO & VOICE · AI AGENTS
+6+ years in mobile (Android)
+one shared core
+./ship --all-sdks --core shared
+One shared core for four SDKs
+sole author, shipped in Android 3.0
+2025.05
+2022.08
+Last updated
+cat about.kt
+cat stack.json
+trained developers through its Kotlin Training Program
+JU Rythum 2019 Winner
+"agents"
+(same day, Oct 2026)
+22 Android SDK releases in 11 months 4 SDKs on one shared core
+3M+ shoppers reached (Ubuy) 6+ years in mobile (Android)
