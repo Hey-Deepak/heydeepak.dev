@@ -26,9 +26,9 @@ const val HERO_ID = "top"
 
 const val HERO_TAG = "MOBILE · REAL-TIME VIDEO & VOICE · AI AGENTS"
 const val HERO_PITCH = "6+ years in mobile (Android). I lead VideoSDK's 4 client SDKs — Android, iOS, Flutter and " +
-    "React Native — on one shared core, and build AI-agent tools on the side."
+    "React Native — on one shared core, and build AI-agent tools for the SDK team."
 
-const val LAST_UPDATED = "2026-10-28"
+const val LAST_UPDATED = "2026-10-29"
 
 enum class Tone { PLAIN, ACCENT, CHECK, DIM }
 
@@ -60,7 +60,10 @@ val heroSteps = listOf(
         ),
         stagger = true,
     ),
-    TerminalStep("cat now.txt", listOf(Seg("Building Buddy: a phone app that runs fleets of Claude Code agents."))),
+    TerminalStep(
+        "cat now.txt",
+        listOf(Seg("Building Buddy: talk to it from your phone, and a daemon on your PC spawns and supervises Claude Code agents.")),
+    ),
 )
 
 const val PHOTO_SRC = "/photo.jpg"
