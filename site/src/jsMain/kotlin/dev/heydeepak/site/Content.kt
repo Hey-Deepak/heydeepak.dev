@@ -3,6 +3,8 @@ package dev.heydeepak.site
 // Single source of truth for every fact on the page.
 
 object Profile {
+    const val ROLE = "SDE 3 · Tech Lead, Client SDKs"
+    const val COMPANY = "VideoSDK"
     const val EMAIL = "choudharydeepak990@gmail.com"
     const val RESUME = "/resume.pdf"
     const val LINKEDIN = "https://www.linkedin.com/in/hey-deepak"
@@ -22,6 +24,10 @@ enum class SiteSection(val id: String, val label: String, val inNav: Boolean = t
 
 const val HERO_ID = "top"
 
+const val HERO_TAG = "MOBILE · REAL-TIME VIDEO & VOICE · AI AGENTS"
+const val HERO_PITCH = "6+ years in mobile (Android). I lead VideoSDK's 4 client SDKs — Android, iOS, Flutter and " +
+    "React Native — on one shared core, and build AI-agent tools on the side."
+
 const val LAST_UPDATED = "2026-10-28"
 
 enum class Tone { PLAIN, ACCENT, CHECK, DIM }
@@ -32,9 +38,9 @@ class Seg(val text: String, val tone: Tone = Tone.PLAIN)
 class TerminalStep(val command: String, val output: List<Seg>, val stagger: Boolean = false)
 
 val heroSteps = listOf(
-    TerminalStep("whoami", listOf(Seg("deepak · SDE 3 · Tech Lead, Client SDKs @ VideoSDK"))),
+    TerminalStep("whoami", listOf(Seg("deepak · ${Profile.ROLE} @ ${Profile.COMPANY}"))),
     TerminalStep(
-        "./releases --sdk android --since 2025-05",
+        "./releases --sdk android",
         listOf(
             Seg("22 releases", Tone.ACCENT),
             Seg(" · 1.0 → 3.0 · "),
@@ -98,13 +104,13 @@ val caseStudies = listOf(
                 isResult = true,
             ),
         ),
-        chips = listOf("Kotlin", "Swift", "JNI/FFI", "Rust", "libwebrtc"),
+        chips = listOf("Kotlin", "JNI/FFI", "Rust", "libwebrtc"),
     ),
     CaseStudy(
         path = "work/android-3x",
         title = "Android SDK 3.x, Kotlin-first",
         notes = listOf(
-            Note("context", "The production SDK was Java with heavy interop."),
+            Note("context", "The 1.x–2.x production SDK was Java."),
             Note(
                 "what I did",
                 "Owned the 3.x major: a Kotlin-only API (227 files, 13.6k lines of Java interop removed), " +
@@ -142,6 +148,7 @@ val caseStudies = listOf(
 )
 
 class Job(
+    // `since` fills the commit-hash slot so the section still reads like `git log --oneline`.
     val since: String,
     val org: String,
     val orgUrl: String?,
@@ -151,15 +158,14 @@ class Job(
     val isCurrent: Boolean = false,
 )
 
-// `since` fills the commit-hash slot so the section still reads like `git log --oneline`.
 private const val STREAMLINERS_URL = "https://thestreamliners.in/"
 
 val careerLog = listOf(
     Job(
         since = "2025.05",
-        org = "VideoSDK",
+        org = Profile.COMPANY,
         orgUrl = "https://www.videosdk.live/",
-        role = "SDE 3 · Tech Lead, Client SDKs",
+        role = Profile.ROLE,
         period = "May 2025 – present",
         isCurrent = true,
         points = listOf(
@@ -233,7 +239,7 @@ val sideProjects = listOf(
     ),
     Project(
         name = "FaangX",
-        meta = "co-founder · EdTech",
+        meta = "co-founder",
         description = "Co-founded FaangX; trained developers through its Kotlin Training Program.",
         chips = emptyList(),
         url = "https://faangx.com",

@@ -24,6 +24,7 @@ object SiteMeta {
             """"worksFor":{"@type":"Organization","name":"VideoSDK","url":"https://www.videosdk.live/"},""" +
             """"alumniOf":{"@type":"CollegeOrUniversity","name":"JECRC University"},""" +
             """"sameAs":["https://github.com/Hey-Deepak","https://www.linkedin.com/in/hey-deepak","https://medium.com/@HeyDeepak"]}"""
+    // <title> comes from site.title in site/.kobweb/conf.yaml, which must equal this.
     const val TITLE = "Deepak Choudhary — SDE 3 · Tech Lead, Client SDKs"
     const val DESCRIPTION = "Deepak Choudhary, SDE 3 and Tech Lead for VideoSDK's Android, iOS, Flutter and " +
         "React Native SDKs on one shared core. 6+ years in mobile (Android); builds AI-agent tools."
@@ -43,7 +44,6 @@ kobweb {
             // The exported HTML is already the readable page, so the bundle must not delay its first paint.
             scriptAttributes.put("defer", "")
             head.add {
-                meta { charset = "utf-8" }
                 link(rel = "canonical", href = SiteMeta.URL)
                 meta { attributes["property"] = "og:type"; content = "website" }
                 meta { attributes["property"] = "og:title"; content = SiteMeta.TITLE }

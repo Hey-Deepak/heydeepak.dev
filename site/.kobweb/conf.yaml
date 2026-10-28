@@ -1,5 +1,6 @@
 site:
-  title: "Deepak Choudhary — Android & Real-time SDK Tech Lead"
+  # Kobweb writes <title> from this; keep it equal to SiteMeta.TITLE (check_site: title != og:title).
+  title: "Deepak Choudhary — SDE 3 · Tech Lead, Client SDKs"
 
 server:
   files:

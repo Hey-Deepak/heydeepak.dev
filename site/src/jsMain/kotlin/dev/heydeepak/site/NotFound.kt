@@ -13,8 +13,10 @@ private const val EXPORT_PLACEHOLDER_PATH = "/this-page"
 private const val NOT_FOUND_TITLE = "No such page · Deepak Choudhary"
 
 @InitKobweb
-fun initNotFound(ctx: InitKobwebContext) {
+fun initRouter(ctx: InitKobwebContext) {
     ctx.router.setErrorPage { NotFoundPage() }
+    // Static hosts serve the home page at /index.html too; the router strips ".html" and would show the 404.
+    ctx.router.registerRedirect("/index", "/")
 }
 
 @Composable

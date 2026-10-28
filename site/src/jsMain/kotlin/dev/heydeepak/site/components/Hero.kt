@@ -42,22 +42,17 @@ private fun HeroIntro() {
             attr("width", PHOTO_SIZE_PX.toString())
             attr("height", PHOTO_SIZE_PX.toString())
         })
-        P(attrs = { classes("hero-tag") }) { Text("MOBILE · REAL-TIME VIDEO & VOICE · AI AGENTS") }
+        P(attrs = { classes("hero-tag") }) { Text(HERO_TAG) }
         H1(attrs = { classes("hero-title") }) {
             Text("Hey, I'm ")
             Span(attrs = { classes("name") }) { Text("Deepak") }
         }
         P(attrs = { classes("hero-role") }) {
-            Text("SDE 3 · Tech Lead, Client SDKs ")
+            Text("${Profile.ROLE} ")
             Span(attrs = { classes("at") }) { Text("at") }
-            Text(" VideoSDK")
+            Text(" ${Profile.COMPANY}")
         }
-        P(attrs = { classes("hero-pitch") }) {
-            Text(
-                "6+ years in mobile (Android). I lead VideoSDK's 4 client SDKs — Android, iOS, Flutter and React Native — " +
-                    "on one shared core, and build AI-agent tools on the side."
-            )
-        }
+        P(attrs = { classes("hero-pitch") }) { Text(HERO_PITCH) }
         Div(attrs = { classes("actions") }) {
             ExternalLink(Profile.RESUME, "btn", "btn-primary") {
                 Span(attrs = { classes("btn-glyph"); attr("aria-hidden", "true") }) { Text("↓") }

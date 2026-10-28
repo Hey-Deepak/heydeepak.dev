@@ -3,7 +3,6 @@
 Thumbs.db
 build/
 out/
-kotlin-js-store/
 
 # IDE
 .idea/

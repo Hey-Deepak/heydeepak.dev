@@ -1,8 +1,0 @@
-{
-  "buildCommand": "",
-  "installCommand": "",
-  "framework": null,
-  "redirects": [
-    { "source": "/(.*)", "destination": "https://heydeepak.dev/$1", "permanent": true }
-  ]
-}

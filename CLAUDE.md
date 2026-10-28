@@ -11,9 +11,12 @@ Kotlin 2.4.10, Kobweb 0.25.1 (Compose HTML), static export. Design: Buddy "Termi
 - Export: `./scripts/export.sh` (output in `site/.kobweb/site`)
 - Preview: `python3 -m http.server 8100 --bind 127.0.0.1 -d site/.kobweb/site`
 - Dev server: `./gradlew :site:kobwebStart -t`, stop with `./gradlew :site:kobwebStop`
-- Checks: `python3 scripts/check_site.py site/.kobweb/site` (script lands in the next task)
+- Checks: `python3 scripts/check_site.py site/.kobweb/site` (add `--links` to check external links)
+- Unit tests: `python3 -m unittest discover -s scripts`
 
 Kotlin root: `site/src/jsMain/kotlin/dev/heydeepak/site/`. Static files: `site/src/jsMain/resources/public/`.
+`<title>` comes from `site.title` in `site/.kobweb/conf.yaml`, which must equal `SiteMeta.TITLE` in
+`site/build.gradle.kts` (the check fails otherwise).
 
 ## Content rules
 
@@ -26,8 +29,13 @@ Kotlin root: `site/src/jsMain/kotlin/dev/heydeepak/site/`. Static files: `site/s
 - Unreleased work means things like the 4.x API.
 - The resume PDF is never committed (`*.pdf` is gitignored); it is served from a GitHub Release asset.
 
+## Updating the resume
+
+`gh release upload resume resume.pdf --clobber`, then `gh workflow run "Deploy site"`. Uploading alone doesn't
+redeploy.
+
 ## Git
 
 - Never commit without the user's OK.
-- Never commit on `main`; work on `v2-kobweb`.
+- Work on a feature branch; merge to `main` through a PR. A push to `main` deploys.
 - No AI or Claude attribution in commits or files.

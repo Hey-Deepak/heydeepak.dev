@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import re
 import shutil
@@ -30,11 +31,13 @@ def _compile(patterns: list[str]) -> list[re.Pattern]:
     return [re.compile(p, re.IGNORECASE) for p in patterns]
 
 
-PHONE = _compile([r"(?<![\d.])(?:\+91[\s-]?)?[6-9](?:[\s-]?\d){9}(?!\d)"])
+PHONE = _compile([r"(?<![\d.])(?:\+91[\s-]?|0[\s-]?)?[6-9](?:[\s-]?\d){9}(?!\d)"])
 PAY = _compile([r"\b(LPA|lakhs?|CTC|salary|per annum)\b"])
 JOB_SEEKING = _compile([
     r"open to\b[^.]{0,30}\b(work|roles?|opportunit\w*|new)\b",
     r"looking for (a )?(new )?(role|job|opportunit)",
+    r"open[\s-]?to[\s-]?work",
+    r"seeking (a )?(new )?(role|job|opportunit)",
     r"available for hire",
     r"actively (looking|seeking)",
     r"notice period",
@@ -83,16 +86,26 @@ def find_forbidden(text: str, patterns: list[re.Pattern]) -> list[str]:
     return [m.group(0) for p in patterns for m in p.finditer(text)]
 
 
+def printable_hits(texts: list[str], patterns: list[re.Pattern]) -> set[str]:
+    """Matches safe to print in a public CI log: a phone hit is named, never shown."""
+    return {"phone number" if p in PHONE else m.group(0)
+            for text in texts for p in patterns for m in p.finditer(text)}
+
+
 def missing_required(text: str, required: list[str]) -> list[str]:
     return [r for r in required if r not in text]
 
 
-def link_ok(url: str, status: int) -> bool | None:
-    if status == 404 or status == 410:
-        return False
+def link_ok(url: str, status: int | None) -> bool | None:
+    """True ok, False broken, None unverified; status None means the request failed (reset, timeout, DNS)."""
     host = (urlparse(url).hostname or "").lower()
     blocked = any(host == h or host.endswith("." + h) for h in BOT_BLOCKED_HOSTS)
-    if status == 999 or (blocked and status >= 400):
+    if status is None:
+        # Bot-blocking hosts reset or stall scripted requests; a real 404 still fails.
+        return None if blocked else False
+    if status == 404 or status == 410:
+        return False
+    if status in (429, 999) or (blocked and status >= 400):
         return None
     return status < 400
 
@@ -111,29 +124,37 @@ def json_ld_person(html: str) -> dict | None:
     return None
 
 
+READABLE_ATTRS = {"content", "alt", "title", "aria-label"}
+
+
 class _AttrParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.values: list[str] = []
-        self._ld = False
+        self.readable: list[str] = []
+        self._capture = False
 
     def handle_starttag(self, tag, attrs):
         self.values += [v for _, v in attrs if v]
-        self._ld = tag == "script" and dict(attrs).get("type", "").lower() == "application/ld+json"
+        self.readable += [v for k, v in attrs if v and k in READABLE_ATTRS]
+        is_ld = tag == "script" and (dict(attrs).get("type") or "").lower() == "application/ld+json"
+        self._capture = is_ld or tag == "title"
 
     def handle_endtag(self, tag):
-        self._ld = False
+        self._capture = False
 
     def handle_data(self, data):
-        if self._ld:
+        if self._capture:
             self.values.append(data)
+            self.readable.append(data)
 
 
-def attribute_text(html: str) -> str:
+def attribute_texts(html: str) -> tuple[list[str], list[str]]:
+    """Every attribute value, and the readable subset (no URLs or class names) that gets the wording checks."""
     parser = _AttrParser()
     parser.feed(html)
     parser.close()
-    return "\n".join(parser.values)
+    return parser.values, parser.readable
 
 
 class _LinkParser(HTMLParser):
@@ -163,16 +184,20 @@ def _fetch_status(url: str, method: str) -> int:
         return e.code
 
 
+NETWORK_ERRORS = (OSError, http.client.HTTPException)  # OSError covers URLError, resets and timeouts
+
+
 def check_link(url: str) -> tuple[bool | None, str]:
     try:
         status = _fetch_status(url, "HEAD")
         if status >= 400:
             status = _fetch_status(url, "GET")
-    except Exception as e:  # network/DNS/timeout
+    except NETWORK_ERRORS:
+        # Some hosts drop HEAD outright, so retry once with GET.
         try:
             status = _fetch_status(url, "GET")
-        except Exception as e2:
-            return False, type(e2).__name__ or type(e).__name__
+        except NETWORK_ERRORS as e:
+            return link_ok(url, None), type(e).__name__
     return link_ok(url, status), str(status)
 
 
@@ -194,21 +219,40 @@ FOOTER_DATE = re.compile(r"Last updated (\d{4}-\d{2}-\d{2})")
 SITEMAP_LASTMOD = re.compile(r"<lastmod>\s*([^<\s]+)\s*</lastmod>")
 
 
-class _CanonicalParser(HTMLParser):
+class _HeadParser(HTMLParser):
     def __init__(self):
-        super().__init__()
+        super().__init__(convert_charrefs=True)
         self.hrefs: list[str] = []
+        self.title = ""
+        self.og_title: str | None = None
+        self._in_title = False
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == "link" and a.get("rel") == "canonical" and a.get("href"):
             self.hrefs.append(a["href"])
+        elif tag == "meta" and a.get("property") == "og:title":
+            self.og_title = a.get("content") or ""
+        # First <title> only: an inline SVG may carry its own.
+        self._in_title = tag == "title" and not self.title
+
+    def handle_endtag(self, tag):
+        self._in_title = False
+
+    def handle_data(self, data):
+        if self._in_title:
+            self.title += data
+
+
+def _head(html: str) -> _HeadParser:
+    parser = _HeadParser()
+    parser.feed(html)
+    parser.close()
+    return parser
 
 
 def canonical_hrefs(html: str) -> list[str]:
-    parser = _CanonicalParser()
-    parser.feed(html)
-    return parser.hrefs
+    return _head(html).hrefs
 
 
 def missing_seo(site_dir: Path) -> list[str]:
@@ -220,6 +264,10 @@ def missing_seo(site_dir: Path) -> list[str]:
         problems.append("missing canonical")
     if json_ld_person(html) is None:
         problems.append("missing json-ld Person")
+    head = _head(html)
+    # Kobweb takes <title> from conf.yaml, og:title from SiteMeta; they must not drift.
+    if head.title.strip() != (head.og_title or "").strip():
+        problems.append("title != og:title")
     robots = site_dir / "robots.txt"
     if robots.is_file() and "Disallow: /resume.pdf" not in robots.read_text(encoding="utf-8").splitlines():
         problems.append("robots: resume.pdf not disallowed")
@@ -231,6 +279,25 @@ def missing_seo(site_dir: Path) -> list[str]:
         if not lastmod or not footer or lastmod.group(1) != footer.group(1):
             problems.append("sitemap: lastmod != footer date")
     return problems
+
+
+def forbidden_patterns() -> list[re.Pattern]:
+    return BUILT_IN + load_patterns(HERE / "forbidden-text.txt")
+
+
+def page_problems(name: str, html: str, forbidden: list[re.Pattern], private: list[re.Pattern]) -> list[str]:
+    """FAIL lines for one page; private hits name the page only, never the match."""
+    text = page_text(html)
+    seen = printable_hits([text], forbidden)
+    fails = [f"FAIL forbidden: {name}: {snippet}" for snippet in sorted(seen)]
+    if find_forbidden(text, private):
+        fails.append(f"FAIL private: {name}")
+    values, readable = attribute_texts(html)
+    hits = (printable_hits(values, PHONE + PAY) | printable_hits(readable, forbidden)) - seen
+    fails += [f"FAIL forbidden: {name} attribute: {snippet}" for snippet in sorted(hits)]
+    if any(find_forbidden(value, private) for value in values):
+        fails.append(f"FAIL private: {name} attribute")
+    return fails
 
 
 def _read_lines(path: Path) -> list[str]:
@@ -254,7 +321,7 @@ def main(argv: list[str]) -> int:
     if not pages:
         fails.append(f"FAIL file: no .html pages in {site}")
 
-    forbidden = BUILT_IN + load_patterns(HERE / "forbidden-text.txt")
+    forbidden = forbidden_patterns()
     private = load_patterns(PRIVATE_PATTERNS)
     for extra in args.extra_patterns:
         private += load_patterns(extra)
@@ -263,16 +330,7 @@ def main(argv: list[str]) -> int:
     for page in pages:
         name = str(page.relative_to(site))
         html = page.read_text(encoding="utf-8", errors="replace")
-        text = page_text(html)
-        for snippet in sorted(set(find_forbidden(text, forbidden))):
-            fails.append(f"FAIL forbidden: {name}: {snippet}")
-        if find_forbidden(text, private):
-            fails.append(f"FAIL private: {name}")
-        attrs = attribute_text(html)
-        for snippet in sorted(set(find_forbidden(attrs, PHONE + PAY))):
-            fails.append(f"FAIL forbidden: {name} attribute: {snippet}")
-        if find_forbidden(attrs, private):
-            fails.append(f"FAIL private: {name} attribute")
+        fails += page_problems(name, html, forbidden, private)
         links.update(external_links(html))
 
     index = site / "index.html"
