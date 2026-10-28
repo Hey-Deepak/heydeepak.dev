@@ -7,6 +7,62 @@ import org.jetbrains.compose.web.dom.*
 
 private const val COPIED_LABEL_MS = 1600L
 
+/** Source-code line styling: [cls] picks the syntax colour. */
+@Composable
+private fun Tok(cls: String, text: String) = Span(attrs = { classes(cls) }) { Text(text) }
+
+/** A named, focusable region so keyboard users can scroll a listing wider than the screen. */
+@Composable
+private fun CodeBlock(fileName: String, content: @Composable () -> Unit) {
+    Pre(attrs = {
+        classes("code")
+        attr("tabindex", "0")
+        attr("role", "region")
+        attr("aria-label", fileName)
+    }) {
+        Code { content() }
+    }
+}
+
+@Composable
+fun AboutSection() {
+    TermSection(SiteSection.ABOUT.id, "cat about.kt", "About") {
+        CodeBlock("about.kt") {
+            Tok("tk-kw", "data class"); Text(" "); Tok("tk-type", "Deepak"); Tok("tk-punc", "(")
+            aboutFields.forEach { field ->
+                Text("\n    ")
+                Tok("tk-kw", "val"); Text(" "); Tok("tk-prop", field.name); Tok("tk-punc", ": ")
+                Tok("tk-type", "String"); Tok("tk-punc", " = ")
+                Tok("tk-str", "\"${field.text}\""); Tok("tk-punc", ",")
+            }
+            Text("\n"); Tok("tk-punc", ")")
+        }
+    }
+}
+
+@Composable
+fun StackSection() {
+    val keyWidth = stackGroups.maxOf { it.key.length }
+    TermSection(SiteSection.STACK.id, "cat stack.json", "Stack") {
+        CodeBlock("stack.json") {
+            Tok("tk-punc", "{")
+            stackGroups.forEachIndexed { index, group ->
+                Text("\n  ")
+                Tok("tk-key", "\"${group.key}\""); Tok("tk-punc", ":")
+                // Pads values into one column, like the hand-aligned file.
+                Text(" ".repeat(keyWidth - group.key.length + 1))
+                Tok("tk-punc", "[")
+                group.items.forEachIndexed { itemIndex, item ->
+                    if (itemIndex > 0) Tok("tk-punc", ", ")
+                    Tok("tk-jstr", "\"$item\"")
+                }
+                Tok("tk-punc", if (index < stackGroups.lastIndex) "]," else "]")
+            }
+            Text("\n"); Tok("tk-punc", "}")
+        }
+    }
+}
+
 @Composable
 fun WorkSection() {
     TermSection(SiteSection.WORK.id, "ls ./work", "Selected work") {
@@ -38,6 +94,7 @@ private fun CaseCard(study: CaseStudy) {
             }
         }
         Chips(study.chips)
+        study.proof?.let { proof -> ExternalLink(proof.href, "case-proof") { Text(proof.label) } }
     }
 }
 
@@ -58,11 +115,13 @@ private fun Commit(job: Job) {
     }) {
         Span(attrs = { classes("commit-node"); attr("aria-hidden", "true") })
         Div(attrs = { classes("commit-line") }) {
-            Span(attrs = { classes("commit-hash"); attr("aria-hidden", "true") }) { Text(job.hash) }
+            Span(attrs = { classes("commit-hash"); attr("aria-hidden", "true") }) { Text(job.since) }
             if (job.isCurrent) {
                 Span(attrs = { classes("commit-ref"); attr("aria-hidden", "true") }) { Text("(HEAD → now)") }
             }
-            H3(attrs = { classes("commit-org") }) { Text(job.org) }
+            H3(attrs = { classes("commit-org") }) {
+                if (job.orgUrl != null) ExternalLink(job.orgUrl, "commit-org-link") { Text(job.org) } else Text(job.org)
+            }
             Span(attrs = { classes("commit-role") }) { Text(job.role) }
             Span(attrs = { classes("commit-when") }) { Text(job.period) }
         }
@@ -182,7 +241,7 @@ private fun ContactRow(key: String, href: String, label: String) {
 fun SiteFooter() {
     Footer(attrs = { classes("footer") }) {
         Div(attrs = { classes("wrap", "footer-inner") }) {
-            Span { Text("Built with Kotlin + Compose (Kobweb) · heydeepak.dev") }
+            Span { Text("Built with Kotlin + Compose (Kobweb) · heydeepak.dev · Last updated $LAST_UPDATED") }
             Span(attrs = { classes("footer-hint") }) {
                 Span(attrs = { classes("kbd") }) { Text(if (isMacLike()) "⌘K" else "Ctrl K") }
                 Text(" or ")

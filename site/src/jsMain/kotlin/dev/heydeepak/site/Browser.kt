@@ -31,6 +31,14 @@ fun motionAllowed(): Boolean =
         document.asDynamic().visibilityState != "hidden" &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
+/** False once the head script's grace period has shown the baked hero values, so replaying the intro would hide them again. */
+fun bakedHeroHidden(): Boolean = document.documentElement?.classList?.contains("js") == true
+
+/** Stops the head script's grace timer from unhiding the baked hero; never set during export, or the snapshot would keep it. */
+fun markAppReady() {
+    if (!isExporting()) document.documentElement.asDynamic().dataset.app = "ready"
+}
+
 /** Calls [onVisible] once when [element] enters the viewport; returns a disposer. */
 fun observeOnce(element: Element, rootMargin: String = "0px 0px -12% 0px", onVisible: () -> Unit): () -> Unit {
     val options: dynamic = js("({})")

@@ -1,0 +1,54 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Install poppler (pdftotext for the PDF check)
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Export site
+        run: KOBWEB_EXPORT_BROWSER_PATH="$(command -v google-chrome || command -v google-chrome-stable)" ./scripts/export.sh
+
+      - name: Download resume PDF
+        run: gh release download resume --pattern resume.pdf --dir site/.kobweb/site
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Check site
+        run: python3 scripts/check_site.py site/.kobweb/site --require-file resume.pdf --pdf site/.kobweb/site/resume.pdf
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/.kobweb/site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

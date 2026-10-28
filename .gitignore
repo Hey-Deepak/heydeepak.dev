@@ -35,3 +35,5 @@ firebase-key.json
 
 # Vercel
 .vercel/
+
+__pycache__/

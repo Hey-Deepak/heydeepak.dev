@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /resume.pdf
+Sitemap: https://heydeepak.dev/sitemap.xml

@@ -2,6 +2,7 @@ package dev.heydeepak.site.components
 
 import androidx.compose.runtime.*
 import dev.heydeepak.site.LocalMotion
+import dev.heydeepak.site.Profile
 import dev.heydeepak.site.observeOnce
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.web.dom.*
@@ -81,6 +82,7 @@ fun ExternalLink(href: String, vararg classNames: String, content: @Composable (
     A(href = href, attrs = {
         classes(*classNames)
         attr("target", "_blank")
-        attr("rel", "noopener noreferrer")
+        // The resume is disallowed in robots.txt; nofollow keeps crawlers from treating the link as a lead.
+        attr("rel", if (href == Profile.RESUME) "noopener noreferrer nofollow" else "noopener noreferrer")
     }) { content() }
 }

@@ -37,7 +37,12 @@ fun Hero() {
 @Composable
 private fun HeroIntro() {
     Div(attrs = { classes("hero-intro") }) {
-        P(attrs = { classes("hero-tag") }) { Text("ANDROID · REAL-TIME VIDEO SDKs · RUST") }
+        Img(src = PHOTO_SRC, alt = PHOTO_ALT, attrs = {
+            classes("hero-photo")
+            attr("width", PHOTO_SIZE_PX.toString())
+            attr("height", PHOTO_SIZE_PX.toString())
+        })
+        P(attrs = { classes("hero-tag") }) { Text("MOBILE · REAL-TIME VIDEO & VOICE · AI AGENTS") }
         H1(attrs = { classes("hero-title") }) {
             Text("Hey, I'm ")
             Span(attrs = { classes("name") }) { Text("Deepak") }
@@ -49,8 +54,8 @@ private fun HeroIntro() {
         }
         P(attrs = { classes("hero-pitch") }) {
             Text(
-                "6+ years on Android. I lead VideoSDK's 4 client SDKs — Android, iOS, Flutter and React Native — " +
-                    "on one shared Rust core, and build AI-agent tools on the side."
+                "6+ years in mobile (Android). I lead VideoSDK's 4 client SDKs — Android, iOS, Flutter and React Native — " +
+                    "on one shared core, and build AI-agent tools on the side."
             )
         }
         Div(attrs = { classes("actions") }) {

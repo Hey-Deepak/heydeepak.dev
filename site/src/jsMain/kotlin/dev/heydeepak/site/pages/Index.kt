@@ -13,8 +13,10 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 
 private const val TOAST_MS = 1800L
-// A thin band across the middle of the viewport decides which section is "current".
-private const val SCROLL_SPY_MARGIN = "-45% 0px -50% 0px"
+// A section is current once its top passes this fraction of the viewport height (below the sticky bar).
+private const val SCROLL_SPY_LINE = 0.35
+private const val PAGE_BOTTOM_SLACK_PX = 2
+private const val MAIN_ID = "content"
 
 private class Toast(val message: String, val id: Int)
 
@@ -22,6 +24,12 @@ private class Toast(val message: String, val id: Int)
 @Composable
 fun HomePage() {
     val motion = remember { motionAllowed() }
+    // Read before markAppReady() below, in the same composition, so the grace timer can't fire in between.
+    val heroMotion = remember { motion && bakedHeroHidden() }
+    DisposableEffect(Unit) {
+        markAppReady()
+        onDispose { }
+    }
     var paletteOpen by remember { mutableStateOf(false) }
     var activeSection by remember { mutableStateOf<String?>(null) }
     var toast by remember { mutableStateOf<Toast?>(null) }
@@ -60,11 +68,14 @@ fun HomePage() {
     ScrollSpy { activeSection = it }
 
     CompositionLocalProvider(LocalMotion provides motion) {
+        A(href = "#$MAIN_ID", attrs = { classes("skip-link") }) { Text("Skip to content") }
         TopBar(activeSection, onOpenPalette = { paletteOpen = true })
-        Main {
-            Hero()
+        Main(attrs = { id(MAIN_ID); attr("tabindex", "-1") }) {
+            CompositionLocalProvider(LocalMotion provides heroMotion) { Hero() }
+            AboutSection()
             WorkSection()
             CareerSection()
+            StackSection()
             BuildingSection()
             ContactSection()
         }
@@ -106,21 +117,33 @@ private fun isTyping(): Boolean {
     return focused.tagName == "INPUT" || focused.tagName == "TEXTAREA" || focused.isContentEditable
 }
 
-/** Reports the section crossing the middle of the viewport (null over the hero). */
+/** Reports the nav item for the scroll position; sections outside the nav count as the preceding nav item. */
 @Composable
 private fun ScrollSpy(onActive: (String?) -> Unit) {
     DisposableEffect(Unit) {
         if (isExporting()) return@DisposableEffect onDispose { }
-        val options: dynamic = js("({})")
-        options.rootMargin = SCROLL_SPY_MARGIN
-        val observer = IntersectionObserver({ entries, _ ->
-            entries.filter { it.isIntersecting }.forEach { entry ->
-                onActive(entry.target.id.takeIf { it != HERO_ID })
+        var frame = 0
+        fun update() {
+            frame = 0
+            val atBottom = window.scrollY + window.innerHeight >= document.documentElement!!.scrollHeight - PAGE_BOTTOM_SLACK_PX
+            if (atBottom) return onActive(SiteSection.entries.last { it.inNav }.id)
+            val line = window.innerHeight * SCROLL_SPY_LINE
+            var active: String? = null
+            for (section in SiteSection.entries) {
+                val element = document.getElementById(section.id) ?: continue
+                if (element.getBoundingClientRect().top > line) break
+                if (section.inNav) active = section.id
             }
-        }, options)
-        (listOf(HERO_ID) + SiteSection.entries.map { it.id })
-            .mapNotNull { document.getElementById(it) }
-            .forEach(observer::observe)
-        onDispose { observer.disconnect() }
+            onActive(active)
+        }
+        val listener: (Event) -> Unit = { if (frame == 0) frame = window.requestAnimationFrame { update() } }
+        window.addEventListener("scroll", listener)
+        window.addEventListener("resize", listener)
+        update()
+        onDispose {
+            window.removeEventListener("scroll", listener)
+            window.removeEventListener("resize", listener)
+            if (frame != 0) window.cancelAnimationFrame(frame)
+        }
     }
 }

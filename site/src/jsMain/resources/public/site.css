@@ -1,3 +1,21 @@
+/* Latin subsets from Google Fonts, self-hosted so no third-party CSS blocks first paint; licences in fonts/. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Terminal Warmth tokens (source: Buddy ui/theme/Color.kt) */
 :root {
   --bg: #080A10;
@@ -6,6 +24,7 @@
   --input: #0A0C15;
   --text: #E8E6DF;
   --mid: #9CA3AF;
+  /* Below 4.5:1 on --bg: large or decorative text only; small text uses --mid or brighter. */
   --dim: #6B7280;
   --amber: #F5A623;
   --teal: #00D4B4;
@@ -58,7 +77,22 @@ a { color: var(--teal); text-decoration: none; transition: color 0.15s ease; }
 a:hover { color: var(--amber); }
 
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
-.section:focus { outline: none; }
+.section:focus, #content:focus { outline: none; }
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 200;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--amber);
+  color: var(--bg);
+  font: 600 14px/1 var(--mono);
+  transform: translateY(-200%);
+}
+.skip-link:hover { color: var(--bg); }
+.skip-link:focus { transform: none; }
 
 ::selection { background: var(--amber); color: var(--bg); }
 
@@ -101,7 +135,7 @@ a:hover { color: var(--amber); }
 }
 .logo { font: 600 14px/1 var(--mono); letter-spacing: -0.01em; white-space: nowrap; }
 .logo-user { color: var(--teal); }
-.logo-at { color: var(--dim); }
+.logo-at { color: var(--mid); }
 .logo-host { color: var(--text); transition: color 0.15s ease; }
 .logo:hover .logo-host { color: var(--amber); }
 
@@ -168,6 +202,17 @@ a:hover { color: var(--amber); }
   align-items: center;
 }
 
+.hero-photo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 18px;
+  border: 2px solid var(--amber);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 4px var(--amber-glow);
+}
+
 .hero-tag {
   display: flex;
   align-items: center;
@@ -188,7 +233,7 @@ a:hover { color: var(--amber); }
 .hero-title .name { color: var(--amber); }
 
 .hero-role { margin-bottom: 14px; font: 500 15px/1.5 var(--mono); color: var(--text); }
-.hero-role .at { color: var(--dim); }
+.hero-role .at { color: var(--mid); }
 
 .hero-pitch { max-width: 33em; margin-bottom: 28px; font-size: 17px; line-height: 1.65; color: var(--mid); }
 
@@ -242,7 +287,7 @@ a:hover { color: var(--amber); }
   left: 50%;
   transform: translateX(-50%);
   font: 500 12px/1 var(--mono);
-  color: var(--dim);
+  color: var(--mid);
   white-space: nowrap;
 }
 .term-body {
@@ -258,7 +303,7 @@ a:hover { color: var(--amber); }
 .t-out { margin-bottom: 12px; color: var(--mid); }
 .t-accent { color: var(--amber); }
 .t-ok { color: var(--green); }
-.t-dim { color: var(--dim); }
+.t-dim { color: var(--mid); }
 
 /* ---------- proof strip ---------- */
 .proof {
@@ -320,11 +365,11 @@ a:hover { color: var(--amber); }
 }
 .case-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .case-title { font: 600 20px/1.3 var(--mono); letter-spacing: -0.015em; color: var(--text); }
-.case-path { font: 400 12px/1 var(--mono); color: var(--dim); white-space: nowrap; }
+.case-path { font: 400 12px/1 var(--mono); color: var(--mid); white-space: nowrap; }
 
 .case-grid { display: grid; grid-template-columns: 1fr 1.45fr 1.15fr; gap: 26px; }
 .case-grid.cols-2 { grid-template-columns: 1.45fr 1fr; }
-.note-label { margin-bottom: 8px; font: 500 12px/1 var(--mono); color: var(--dim); }
+.note-label { margin-bottom: 8px; font: 500 12px/1 var(--mono); color: var(--mid); }
 .note-text { font-size: 15px; line-height: 1.6; color: var(--mid); }
 .note.is-result { padding-left: 14px; border-left: 2px solid var(--amber); }
 .note.is-result .note-label { color: var(--amber); }
@@ -369,7 +414,7 @@ a:hover { color: var(--amber); }
 .commit-ref { font: 500 12px/1.5 var(--mono); color: var(--teal); }
 .commit-org { font: 600 17px/1.4 var(--sans); color: var(--text); }
 .commit-role { font-size: 15px; color: var(--mid); }
-.commit-when { margin-left: auto; font: 400 12.5px/1.5 var(--mono); color: var(--dim); white-space: nowrap; }
+.commit-when { margin-left: auto; font: 400 12.5px/1.5 var(--mono); color: var(--mid); white-space: nowrap; }
 .commit-points { display: grid; gap: 6px; max-width: 72ch; margin-top: 10px; }
 .commit-points li { position: relative; padding-left: 18px; font-size: 15px; line-height: 1.6; color: var(--mid); }
 .commit-points li::before { content: "+"; position: absolute; left: 0; font-family: var(--mono); color: var(--green); }
@@ -387,7 +432,7 @@ a:hover { color: var(--amber); }
 }
 .project:hover { border-color: rgba(0, 212, 180, 0.45); transform: translateY(-2px); }
 .project.is-featured { grid-row: span 2; }
-.project-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font: 500 12px/1 var(--mono); color: var(--dim); }
+.project-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font: 500 12px/1 var(--mono); color: var(--mid); }
 .project-meta.is-running { color: var(--amber); }
 .status-dot {
   width: 8px; height: 8px;
@@ -401,6 +446,8 @@ a:hover { color: var(--amber); }
 }
 .project-name { margin-bottom: 10px; font: 700 22px/1.2 var(--mono); letter-spacing: -0.02em; color: var(--text); }
 .project-desc { font-size: 15px; line-height: 1.6; color: var(--mid); }
+.case-proof { display: inline-block; margin-top: 14px; font: 500 13px/1.3 var(--mono); }
+.commit-org-link { color: inherit; }
 .project-link { margin-top: auto; padding-top: 18px; font: 500 13px/1.3 var(--mono); overflow-wrap: anywhere; }
 
 .diagram {
@@ -414,11 +461,32 @@ a:hover { color: var(--amber); }
   color: var(--mid);
 }
 .d-node { color: var(--text); }
-.d-dim { color: var(--dim); }
+.d-dim { color: var(--mid); }
 .d-run { color: var(--amber); }
 
+/* ---------- code blocks (about.kt, stack.json) ---------- */
+.code {
+  /* Long lines scroll inside the block so the page itself never scrolls sideways. */
+  max-width: 100%;
+  padding: 20px 22px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  font: 400 14px/1.75 var(--mono);
+  color: var(--text);
+  tab-size: 4;
+}
+.tk-kw { color: var(--purple); }
+.tk-type { color: var(--blue); }
+.tk-prop { color: var(--text); }
+.tk-str { color: var(--teal); }
+.tk-key { color: var(--teal); }
+.tk-jstr { color: var(--amber); }
+.tk-punc { color: var(--mid); }
+
 .recog { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 28px; }
-.recog-label { font: 500 12px/1 var(--mono); color: var(--dim); }
+.recog-label { font: 500 12px/1 var(--mono); color: var(--mid); }
 .badges { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge {
   display: inline-flex;
@@ -464,7 +532,7 @@ a:hover { color: var(--amber); }
   font: 400 14px/1.4 var(--mono);
 }
 .kv-row + .kv-row { border-top: 1px dashed var(--border); }
-.kv-key { color: var(--dim); }
+.kv-key { color: var(--mid); }
 .kv-val { overflow-wrap: anywhere; }
 .kv-glyph { color: var(--dim); }
 .kv-row:hover .kv-glyph { color: var(--amber); }
@@ -489,7 +557,7 @@ a:hover { color: var(--amber); }
   justify-content: space-between;
   gap: 12px;
   font: 400 12.5px/1.6 var(--mono);
-  color: var(--dim);
+  color: var(--mid);
 }
 
 .kbd {
@@ -549,7 +617,7 @@ a:hover { color: var(--amber); }
   color: var(--text);
   font: 400 15px/1 var(--mono);
 }
-.palette-input::placeholder { color: var(--dim); }
+.palette-input::placeholder { color: var(--mid); }
 .palette-list { max-height: min(340px, 50vh); padding: 6px; overflow-y: auto; overscroll-behavior: contain; }
 .palette-item {
   display: grid;
@@ -563,17 +631,17 @@ a:hover { color: var(--amber); }
   cursor: pointer;
 }
 .palette-item.is-active { background: var(--amber-tint); color: var(--text); box-shadow: inset 2px 0 0 var(--amber); }
-.pi-group { font-size: 11.5px; color: var(--dim); }
-.pi-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--dim); }
+.pi-group { font-size: 11.5px; color: var(--mid); }
+.pi-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--mid); }
 .palette-item.is-active .pi-hint { color: var(--amber); }
-.palette-empty { padding: 18px 12px; font: 400 13.5px/1.4 var(--mono); color: var(--dim); }
+.palette-empty { padding: 18px 12px; font: 400 13.5px/1.4 var(--mono); color: var(--mid); }
 .palette-foot {
   display: flex;
   gap: 16px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   font: 400 11.5px/1.5 var(--mono);
-  color: var(--dim);
+  color: var(--mid);
 }
 
 @keyframes fade-in { from { opacity: 0; } }
@@ -600,7 +668,7 @@ a:hover { color: var(--amber); }
 /* ---------- motion preferences ---------- */
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
-  /* Baked-in export values stay hidden until the app re-renders and animates them. */
+  /* Baked hero values wait for the app to animate them; the head script unhides them after its grace period. */
   html.js .term-live[data-static],
   html.js .stat-num[data-static] { visibility: hidden; }
 }
@@ -668,6 +736,7 @@ a:hover { color: var(--amber); }
   .commit-when { width: 100%; margin-left: 0; }
   .project { padding: 20px 18px; }
   .diagram { font-size: 11.5px; padding: 12px; }
+  .code { padding: 14px; font-size: 12.5px; }
   .kv-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; }
   .kv-key { grid-column: 1 / -1; font-size: 12px; }
 }
@@ -685,3 +754,8 @@ a:hover { color: var(--amber); }
 @media (max-width: 400px) {
   .term-body { font-size: 11.5px; }
 }
+
+/* ---------- 404 ---------- */
+.nf { padding-top: 96px; max-width: 640px; }
+.nf-link { color: var(--teal); }
+.nf-link:hover { color: var(--amber); }
