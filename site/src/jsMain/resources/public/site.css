@@ -1,4 +1,4 @@
-/* Hallmark · genre: terminal · macrostructure: App shell (one terminal window you use) · theme: custom (Terminal Warmth) · enrichment: Tier-A text art · nav: command chips + prompt · footer: motd colophon */
+/* Hallmark · genre: terminal · macrostructure: App shell (one terminal window you use) · theme: custom (Terminal Warmth) · enrichment: Tier-A text art + agent-cursor swarm · nav: command chips + prompt · footer: motd colophon · studied: saai.pro (DNA only) */
 
 /* JetBrains Mono, self-hosted (Google Fonts subsets, licence in fonts/): latin, plus the box-drawing,
    block and symbol glyphs the text art needs, so every cell is the same width on every platform. */
@@ -70,6 +70,7 @@
   --text-h2: 1.5rem;
   --text-tagline: clamp(1.6rem, 2.6vw, 2.4rem);
   --text-num: 1.75rem;
+  --text-hs: 2.25rem;
   /* Just under the glyphs' 1.32em height, so box and block glyphs overlap instead of leaving seams. */
   --lh-art: 1.3;
   /* 5/3px (a hair under): text-art sizes are rounded to it so every 0.6em cell is a whole pixel. */
@@ -96,6 +97,8 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
+  /* The longest a first-screen block waits for its agent before it shows anyway. */
+  --ag-failsafe: 12s;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -453,6 +456,8 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
 .hello { display: flex; align-items: center; gap: var(--space-sm); }
 .hero-photo { flex: none; width: 52px; height: 52px; border: 2px solid var(--amber); border-radius: 50%; object-fit: cover; box-shadow: 0 0 16px -2px color-mix(in oklch, var(--amber) 45%, transparent); }
 .hello-text { font-size: 1.125rem; font-weight: 700; color: var(--text); }
+/* The name in reverse video, like a terminal selection (`tput rev`): --bg on amber, 10:1. */
+.rev { padding: 0 0.5ch; background: var(--amber); color: var(--on-amber); box-shadow: 0 0 18px -4px color-mix(in oklch, var(--amber) 60%, transparent); }
 .hero-role { color: var(--text); }
 .hero-role .at { color: var(--mid); }
 
@@ -468,6 +473,78 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
 }
 .hero-pitch { max-width: 82ch; margin-top: var(--space-xs); font-size: 1.0625rem; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-top: var(--space-sm); }
+
+/* whoami's proof numbers: value large, label small under it, hairline dividers; 2×2, one row of 4 when wide. */
+.hero-stats {
+  --stat-gap: var(--space-md);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm) var(--stat-gap);
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+.hero-stat { position: relative; display: flex; flex-direction: column; min-width: 0; }
+/* The divider sits in the middle of the gap, so both columns keep their full width; `content` switches it on. */
+.hero-stat::before { position: absolute; top: 0; bottom: 0; left: calc(var(--stat-gap) / -2); border-left: 1px solid var(--border); }
+.hero-stat:nth-child(even)::before { content: ""; }
+.hs-num {
+  font: 700 var(--text-hs)/1.15 var(--font-mono);
+  letter-spacing: -0.02em;
+  color: var(--amber);
+  text-shadow: var(--glow-amber);
+  font-variant-numeric: tabular-nums;
+}
+.hs-label { margin-top: 2px; color: var(--mid); font-size: var(--text-micro); line-height: 1.45; text-wrap: balance; }
+/* One row of 4; the first label is the longest, so its column is wider (two lines each). */
+@container (min-width: 40rem) {
+  .hero-stats { grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); }
+  .hero-stat:not(:first-child)::before { content: ""; }
+}
+
+/* whoami's status cards: one link each, numbered, with a mono status tag top right. */
+.hero-cards { display: grid; gap: var(--space-xs); margin-top: var(--space-md); }
+.hcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  row-gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+.hcard:hover { border-color: var(--amber-line); color: var(--text); }
+.hcard:active { transform: translateY(1px); }
+.hc-top { grid-column: 1; grid-row: 1; display: flex; align-items: baseline; gap: 1.5ch; font-size: var(--text-micro); white-space: nowrap; }
+.hc-num { color: var(--mid); font-weight: 700; font-variant-numeric: tabular-nums; }
+.hc-cmd { color: var(--teal); font-weight: 600; }
+.hc-tag {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 0.2em 0.9ch;
+  border: 1px solid var(--teal-line);
+  border-radius: 3px;
+  color: var(--teal);
+  font: 700 0.75rem/1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.hcard.is-running .hc-tag { border-color: var(--amber-line); color: var(--amber); }
+.hc-title { grid-column: 1 / -1; margin-top: var(--space-3xs); font-size: 1.0625rem; font-weight: 700; line-height: 1.4; }
+.hc-line { grid-column: 1 / -1; color: var(--mid); font-size: var(--text-small); line-height: 1.5; }
+.hcard:hover .hc-title, .hcard:hover .hc-cmd { color: var(--amber); }
+/* Tablets: the three cards in a row; phones stack them. */
+@container (min-width: 56rem) {
+  .hero-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hcard { padding-inline: var(--space-xs); }
+  .hc-title { font-size: var(--text-body); }
+  .hc-line { font-size: var(--text-micro); }
+}
 
 /* ./ship: the map, the hero's centrepiece */
 .ship { position: relative; }
@@ -755,6 +832,33 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
 .demo-buddy .demo-who, .demo-buddy .demo-text { color: var(--amber); text-shadow: var(--glow-amber); }
 .demo-agent .demo-who { color: var(--purple); }
 .demo-agent .demo-text { color: var(--mid); }
+/* buddy build: tmux panes drawn as output, the title in the top border; 2×2 once the output is wide. */
+.build { container-type: inline-size; }
+.build-note { color: var(--mid); }
+.build-panes { display: grid; gap: var(--space-xs) var(--space-sm); margin-top: var(--space-xs); }
+@container (min-width: 44rem) {
+  .build-panes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.bpane { display: flex; flex-direction: column; min-width: 0; font-size: var(--text-small); }
+.bpane-head { display: flex; align-items: center; gap: 1ch; height: 1.7em; line-height: 1; }
+/* The top border, broken by the title: ┌─ title ──────┐ */
+.bpane-head::before, .bpane-head::after { content: ""; align-self: flex-end; height: 50%; border-top: 1px solid var(--border); }
+.bpane-head::before { flex: none; width: 1.5ch; border-left: 1px solid var(--border); }
+.bpane-head::after { flex: 1; border-right: 1px solid var(--border); }
+.bpane-title { color: var(--purple); font-weight: 700; white-space: nowrap; }
+.bpane.is-phone .bpane-title { color: var(--teal); text-shadow: var(--glow-teal); }
+/* The same colour as the agent's cursor in the swarm. */
+.agent-website-builder .bpane-title { color: var(--teal); }
+.agent-checks .bpane-title { color: var(--green); }
+.bpane-lines { flex: 1; display: grid; align-content: start; padding: var(--space-3xs) 1.5ch var(--space-xs); border: 1px solid var(--border); border-top: 0; }
+.bl-line { color: var(--text); white-space: nowrap; }
+.bl-text { display: inline-block; max-width: 100%; overflow: hidden; vertical-align: top; }
+.bl-line.is-ok .bl-text::first-letter { color: var(--green); }
+.bl-line.is-ok { font-weight: 600; }
+.bpane.is-phone .bl-line:first-child { color: var(--amber); }
+.build-done { margin-top: var(--space-xs); color: var(--text); font-weight: 700; }
+.build-ok { color: var(--green); text-shadow: var(--glow-green); }
+
 /* Screenshots: phone-shaped frames (no fake phone chrome). A strip that snaps frame by frame, then a
    4-column grid once the output is wide. Frames are wide enough for a 27-character caption on one line. */
 .gallery { container-type: inline-size; }
@@ -811,6 +915,169 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
   }
   .shot-item { width: auto; }
 }
+
+/* ---------- agent swarm: cursors, outlines, the build pill (decoration; every word is in the HTML) ---------- */
+.swarm { position: fixed; inset: 0; z-index: 90; overflow: hidden; pointer-events: none; }
+.swarm.is-off { display: none; }
+.swarm-boxes { position: absolute; inset: 0; }
+.ag-cur {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--c);
+  opacity: 0;
+  transition: opacity 400ms var(--ease-out);
+  will-change: transform;
+}
+.ag-cur.is-on { opacity: 1; }
+.ag-arrow, .ag-hand { width: 18px; height: 22px; filter: drop-shadow(0 2px 3px var(--shadow)); }
+/* The arrow's tip is the cursor's point. */
+.ag-arrow { display: block; margin: -1.5px 0 0 -1.5px; }
+.ag-arrow path, .ag-hand path { fill: currentColor; stroke: var(--bg); stroke-width: 1.5px; stroke-linejoin: round; }
+/* Typing: an I-beam one line tall, centred on the point. */
+.ag-ibeam { display: none; position: absolute; left: -1px; top: calc(var(--ib, 20px) / -2); width: 2px; height: var(--ib, 20px); background: currentColor; box-shadow: 0 0 8px currentColor; }
+.ag-ibeam::before, .ag-ibeam::after { content: ""; position: absolute; left: -3px; width: 8px; height: 2px; background: currentColor; }
+.ag-ibeam::before { top: 0; }
+.ag-ibeam::after { bottom: 0; }
+.ag-cur.is-ibeam .ag-arrow { display: none; }
+.ag-cur.is-ibeam .ag-ibeam { display: block; }
+.ag-tag {
+  position: absolute;
+  left: 14px;
+  top: 18px;
+  max-width: 62vw;
+  overflow: hidden;
+  padding: 0 0.6ch;
+  border-radius: 3px;
+  background: var(--c);
+  color: var(--bg);
+  font: 700 0.6875rem/1.55 var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Moved by transforms only (never left/top), so a tag changing side is not a layout shift. Typing: under the I-beam. */
+.ag-cur.is-ibeam .ag-tag { transform: translate(-6px, calc(var(--ib, 20px) / 2 - 16px)); }
+/* Near the right edge the name sits on the cursor's left. */
+.ag-cur.is-flip .ag-tag { transform: translateX(calc(-100% - 20px)); }
+.ag-cur.is-flip.is-ibeam .ag-tag { transform: translate(calc(-100% - 12px), calc(var(--ib, 20px) / 2 - 16px)); }
+/* No room below (the build pill, the window's edge): the tag sits beside the arrow, on its line. */
+.ag-cur.is-up .ag-tag { transform: translate(6px, -16px); }
+.ag-cur.is-up.is-flip .ag-tag { transform: translate(calc(-100% - 20px), -16px); }
+.ag-cur.is-quiet .ag-tag { display: none; }
+/* The visitor's pointer, drawn like the agents (mouse only). The native one hides only while this one
+   is on screen, so there is always a pointer: no JS, agents off, reduced motion or touch keep the system's. */
+html.ag-you-on, html.ag-you-on * { cursor: none; }
+.ag-you {
+  --c: var(--text);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  display: none;
+  color: var(--c);
+  pointer-events: none;
+  will-change: transform;
+}
+/* No box at all until it's on screen (at the pointer), so it never sits at the window's edge. */
+.ag-you.is-on { display: block; }
+/* The fingertip is the pointer's point. */
+.ag-hand { display: none; margin: -1.5px 0 0 -6.5px; }
+.ag-hand .ag-crease { fill: none; stroke-width: 1px; stroke-linecap: round; }
+.ag-you.is-hand .ag-arrow, .ag-you.is-ibeam .ag-arrow { display: none; }
+.ag-you.is-hand .ag-hand { display: block; }
+.ag-you.is-ibeam .ag-ibeam { --ib: 18px; display: block; }
+/* Its `you` tag rests after a moment of stillness and wakes on the next move. */
+.ag-you .ag-tag { opacity: 0; transition: opacity var(--dur-short) var(--ease-out); }
+.ag-you.is-awake .ag-tag { opacity: 1; }
+.ag-you.is-ibeam .ag-tag { transform: translate(-6px, -7px); }
+.ag-you.is-hand .ag-tag { transform: translate(2px, 4px); }
+
+/* A selection outline, opened by transforms only: four edges, four handles and a placement mark. */
+.ag-sel { position: absolute; left: 0; top: 0; color: var(--c); transition: opacity 280ms var(--ease-out); will-change: transform; }
+.ag-sel.is-out { opacity: 0; }
+.ag-e { position: absolute; left: 0; top: 0; background: currentColor; transform-origin: 0 0; }
+.ag-e.h { height: 1px; }
+.ag-e.v { width: 1px; }
+.ag-h { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border: 1px solid currentColor; background: var(--bg); }
+.ag-x { position: absolute; left: -14px; top: -14px; width: 9px; height: 9px; }
+.ag-x::before, .ag-x::after { content: ""; position: absolute; background: currentColor; }
+.ag-x::before { left: 4px; top: 0; width: 1px; height: 9px; }
+.ag-x::after { left: 0; top: 4px; width: 9px; height: 1px; }
+
+/* The build pill floats above the prompt; its bottom edge is the progress line. */
+.ag-anchor { position: relative; z-index: 95; flex: none; height: 0; }
+.ag-bar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: 1.5ch;
+  max-width: calc(100% - 2 * var(--space-sm));
+  overflow: hidden;
+  padding: 0.3rem 0.3rem 0.3rem 1.5ch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 14px 34px -14px var(--shadow);
+  color: var(--text);
+  font-size: var(--text-micro);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.ag-bar.is-done { padding-right: 1.5ch; color: var(--green); }
+.ag-who { color: var(--amber); font-weight: 700; }
+.ag-short { display: none; }
+.ag-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 1ch;
+  min-height: 1.75rem;
+  padding-inline: 1.25ch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--input);
+  color: var(--text);
+  font: 700 var(--text-micro)/1 var(--font-mono);
+  cursor: pointer;
+}
+.ag-skip:hover { border-color: var(--amber-line); color: var(--amber); }
+.ag-esc { color: var(--mid); font-weight: 400; }
+.ag-track { position: absolute; left: 1.5ch; right: 1.5ch; bottom: 0; height: 2px; background: var(--border); }
+.ag-fill { display: block; height: 100%; background: var(--amber); box-shadow: 0 0 6px var(--amber); transform: scaleX(0); transform-origin: left center; }
+@media (hover: none) {
+  .ag-esc { display: none; }
+}
+@media (max-width: 480px) {
+  .ag-long { display: none; }
+  .ag-short { display: inline; }
+}
+/* The smallest phones: the pill keeps its words and Skip on one line. */
+@media (max-width: 400px) {
+  .ag-bar { gap: 1ch; }
+  .ag-esc { display: none; }
+}
+/* After the build: the agents' switch, left in the title bar. */
+.titlebar-agents {
+  position: absolute;
+  left: var(--space-2xs);
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding-inline: 1.25ch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--input);
+  color: var(--mid);
+  font: 700 var(--text-micro)/1 var(--font-mono);
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateY(-50%);
+  animation: fade-in var(--dur-short) var(--ease-out);
+}
+.titlebar-agents[aria-pressed="true"] { border-color: var(--teal-line); color: var(--teal); }
+.titlebar-agents:hover { border-color: var(--amber-line); color: var(--amber); }
 
 /* ---------- command palette ---------- */
 .palette-backdrop {
@@ -923,6 +1190,12 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
   80%, 100% { transform: translateY(400%); }
 }
 @keyframes pulse { to { opacity: 0.4; } }
+/* Hidden for the whole delay (fill backwards), then shown: a block's way out if its agent never comes. */
+@keyframes ag-failsafe { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ag-settle { from { opacity: 0; transform: translateY(8px); } }
+/* A typed line: 0 → its n cells, one cell per step (JetBrains Mono: 1ch is one cell). */
+@keyframes type-in { from { width: 0; } to { width: calc(var(--n) * 1ch); } }
+@keyframes caret-on { from, to { opacity: 1; } }
 
 /* ---------- motion ---------- */
 @media (prefers-reduced-motion: no-preference) {
@@ -947,8 +1220,21 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
   .out.is-playing > :nth-child(n + 6) { animation-delay: 300ms; }
   /* buddy demo: one line at a time, slow enough to read along. */
   .demo.is-playing .demo-line { animation: stream-in 320ms var(--ease-out) both; animation-delay: calc(300ms + var(--i) * 650ms); }
-  /* Its "next" line waits for the replay's last line (7 lines). */
-  .out.is-playing > .demo.is-playing + .next { animation-delay: 4600ms; }
+  /* buddy build: every pane types at once, a line at a time, with a block cursor; times come from Buddy.kt. */
+  .build.is-playing .bl-text { animation: type-in var(--dur) steps(var(--n), end) backwards; animation-delay: var(--at); }
+  .build.is-playing .bl-line::after {
+    content: "";
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    margin-right: -0.6em;
+    vertical-align: -0.2em;
+    background: var(--amber);
+    opacity: 0;
+    animation: caret-on var(--dur) steps(1, end);
+    animation-delay: var(--at);
+  }
+  .build.is-playing .build-done { animation: stream-in 300ms var(--ease-out) backwards; animation-delay: var(--at); }
 
   /* ./ship: lines draw, a dot runs each line into the core one after another, the ✓ lights and the core
      glow pulses once. One pass, every time the map is printed (2.75 s dots + the pulse). */
@@ -961,6 +1247,27 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
   .ship.is-playing .ship-narrow .m-dot { animation: dot-narrow 1100ms var(--ease-in-out) both; animation-delay: calc(600ms + var(--row) * 350ms); }
   .ship.is-playing .m-lit { animation: fade-in 400ms var(--ease-out) both 2750ms; }
   .ship.is-playing .m-glow { animation: core-pulse 900ms var(--ease-out) both 2750ms; }
+
+  /* The agents build the first screen: each block waits (hidden, still read by screen readers) until
+     its agent reaches it; if none comes, it shows anyway after the failsafe. */
+  html.ag-boot .entry.is-boot > .prompt:not([data-ag]),
+  html.ag-boot .entry.is-boot .last-login:not([data-ag]),
+  html.ag-boot .entry.is-boot .whoami :is(.art, .hero-photo, .hello-text, .hero-role, .hero-tag, .tagline, .hero-pitch, .actions, .hero-stats, .hero-cards > li):not([data-ag]),
+  html.ag-boot .entry.is-boot .motd > :not([data-ag]) {
+    animation: ag-failsafe 1ms linear var(--ag-failsafe) both;
+  }
+  /* A command's output: each block waits for its agent, at most a few seconds. */
+  .transcript .entry > .out.ag-fast > :not([data-ag]),
+  .transcript .entry [data-ag="open"] > :not([data-ag]) {
+    animation: ag-failsafe 1ms linear 3s both;
+  }
+  /* Typed and swept blocks show under a moving clip (set by the agent); settled ones move in. */
+  .transcript .entry :is([data-ag="type"], [data-ag="sweep"], [data-ag="open"], [data-ag="done"], [data-ag="kids"]) { animation: none; }
+  .transcript .entry [data-ag="settle"] { animation: ag-settle 420ms var(--ease-out) both; }
+  .transcript .entry [data-ag="kids"] > * { animation: ag-settle 380ms var(--ease-out) both; }
+  .transcript .entry [data-ag="kids"] > :nth-child(2) { animation-delay: 80ms; }
+  .transcript .entry [data-ag="kids"] > :nth-child(3) { animation-delay: 160ms; }
+  .transcript .entry [data-ag="kids"] > :nth-child(n + 4) { animation-delay: 240ms; }
 
   /* buddy ps, once in view: dots pulse, the selection bar steps down; both stop after a few passes. */
   .ps.is-live .ps-sel { animation: ps-scan 10s linear 3; }
@@ -981,16 +1288,46 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
 }
 
 /* ---------- responsive ---------- */
-/* Wide screens: in whoami the art and who I am sit side by side. */
-@media (min-width: 1100px) {
-  .whoami-top { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-xl); align-items: center; }
-  .whoami-top .art { margin-block: var(--space-3xs) 0; }
+/* Small laptops and big tablets: a larger name (480px of art), still stacked. */
+@media (min-width: 900px) {
+  .whoami { --art-cap: 1.0416667rem; }
+}
+
+/* Wide screens (the window at its full width): whoami is two columns. Left: the art (large), headline,
+   pitch, buttons, numbers. Right: who I am beside the art, the status cards under it. The cards' extra
+   height goes to the last row. */
+@media (min-width: 1240px) {
+  .whoami {
+    --art-cap: 1.5625rem;
+    --hero-side: 27rem;
+    --hero-gap: var(--space-xl);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--hero-side);
+    grid-template-rows: repeat(5, auto) 1fr;
+    column-gap: var(--hero-gap);
+  }
+  .whoami-top { display: contents; }
+  .whoami .art { grid-area: 1 / 1; align-self: center; margin-block: var(--space-3xs) 0; }
+  .whoami-id { grid-area: 1 / 2; align-self: center; }
+  .whoami .tagline { grid-area: 2 / 1; }
+  .whoami .hero-pitch { grid-area: 3 / 1; }
+  .whoami .actions { grid-area: 4 / 1; }
+  .whoami .hero-stats { grid-area: 5 / 1; }
+  .whoami .hero-cards { grid-column: 2; grid-row: 2 / -1; grid-template-columns: minmax(0, 1fr); align-self: start; margin-top: var(--space-sm); }
+  .whoami .hcard { padding-inline: var(--space-sm); }
+  .whoami .hc-title { font-size: 1.0625rem; }
+  .whoami .hc-line { font-size: var(--text-small); }
+  /* The art fills the left column (28.8em wide), still in whole-pixel cells. */
+  .whoami .art { font-size: min(var(--art-cap), calc((100cqi - var(--hero-side) - var(--hero-gap)) / 29)); }
+  @supports (width: 1cqi) and (font-size: round(down, 10px, 1px)) {
+    .whoami .art { font-size: min(var(--art-cap), round(down, calc((100cqi - var(--hero-side) - var(--hero-gap)) / 28.8), var(--cell-step))); }
+  }
   /* Photo + greeting on one row, the role line under them at full width. */
   .whoami-id .hello { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--space-md); row-gap: var(--space-xs); }
   .whoami-id .hello > div { display: contents; }
   .whoami-id .hero-role { grid-column: 1 / -1; }
   .whoami-id .hero-photo { width: 64px; height: 64px; }
-  .whoami-id .hello-text { font-size: 1.25rem; }
+  .whoami-id .hello-text { font-size: 1.375rem; }
 }
 
 @media (max-width: 860px) {
@@ -1002,7 +1339,9 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
   .term-page { padding: 0; }
   .term { border: 0; border-radius: 0; }
   .titlebar { justify-content: flex-start; min-height: 2rem; padding-inline: var(--space-sm) 9rem; }
-  .titlebar-title { font-size: var(--text-micro); }
+  .titlebar-title { min-width: 0; font-size: var(--text-micro); }
+  /* The agents' switch sits before the title, which shortens to fit. */
+  .titlebar-agents { position: static; flex: none; margin-right: 1ch; transform: none; }
   .transcript { padding-inline: var(--space-sm); }
   .prompt-line { padding-inline: var(--space-sm); }
   /* The fade at the right edge says the row scrolls. */
@@ -1059,6 +1398,10 @@ html.js .entry[data-static]:not(.is-boot) { display: none; }
 }
 
 @media (max-width: 440px) {
+  /* Each card part stays on one line down to 320px. */
+  .hcard { padding-inline: var(--space-xs); }
+  .hc-title { font-size: var(--text-body); }
+  .hc-line { font-size: var(--text-micro); }
   /* The SEE ALSO links stay on one line each. */
   .man-links { padding-left: 0; font-size: var(--text-micro); }
   /* The longest stack item can't fit at the narrowest widths, so it may wrap. */

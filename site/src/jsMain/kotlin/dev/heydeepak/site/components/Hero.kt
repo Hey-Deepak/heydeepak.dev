@@ -39,11 +39,13 @@ internal fun AttrsScope<*>.streamRow(index: Int) {
     style { property("--i", index.toString()) }
 }
 
-/** `whoami`: the name art, who I am, the headline, the pitch and the buttons. */
+/**
+ * `whoami`: the name art, who I am, the headline, the pitch, the buttons, the proof numbers and the
+ * status cards; a card click [run]s its command. Wide screens put who-I-am and the cards in a right column.
+ */
 @Composable
-fun WhoAmI(reveal: Reveal, withTitle: Boolean = true) {
+fun WhoAmI(reveal: Reveal, withTitle: Boolean = true, run: (String) -> Unit) {
     Div(attrs = { classes("whoami"); revealState(reveal) }) {
-        // Wide screens: the art and who-I-am side by side; stacked otherwise.
         Div(attrs = { classes("whoami-top") }) {
             Pre(attrs = { classes("art"); attr("aria-hidden", "true") }) {
                 heroArt.forEachIndexed { index, row ->
@@ -64,7 +66,11 @@ fun WhoAmI(reveal: Reveal, withTitle: Boolean = true) {
                         attr("height", PHOTO_SIZE_PX.toString())
                     })
                     Div {
-                        P(attrs = { classes("hello-text") }) { Text("Hey, I’m Deepak") }
+                        P(attrs = { classes("hello-text") }) {
+                            Text("Hey, I’m ")
+                            // Reverse video, like a terminal selection.
+                            Span(attrs = { classes("rev") }) { Text("Deepak") }
+                        }
                         P(attrs = { classes("hero-role") }) {
                             Text("${Profile.ROLE} ")
                             Span(attrs = { classes("at") }) { Text("@") }
@@ -88,12 +94,48 @@ fun WhoAmI(reveal: Reveal, withTitle: Boolean = true) {
             Span(attrs = { classes("keep-line") }) { Text(HERO_HEADLINE_TAIL) }
         }
         P(attrs = { classes("hero-pitch"); streamRow(row++) }) { Text(HERO_PITCH) }
-        Div(attrs = { classes("actions"); streamRow(row) }) {
+        Div(attrs = { classes("actions"); streamRow(row++) }) {
             ResumeButton()
             A(href = "mailto:${Profile.EMAIL}", attrs = { classes("tbtn") }) { TermButtonLabel("email", glyph = "✉") }
             ExternalLink(Profile.LINKEDIN, "tbtn") { TermButtonLabel("linkedin", trailing = "↗") }
             ExternalLink(Profile.GITHUB, "tbtn") { TermButtonLabel("github", trailing = "↗") }
         }
+        // Value first, then its label: the page text reads "22 Android SDK releases in 11 months".
+        Ul(attrs = { classes("hero-stats"); attr("aria-label", "Highlights"); streamRow(row) }) {
+            proofStats.forEach { stat ->
+                Li(attrs = { classes("hero-stat") }) {
+                    Span(attrs = { classes("hs-num") }) { Text(stat.value) }
+                    Text(" ")
+                    Span(attrs = { classes("hs-label") }) { Text(stat.label) }
+                }
+            }
+        }
+        Ul(attrs = { classes("hero-cards"); attr("aria-label", "Highlights to open"); streamRow(row) }) {
+            heroCards.forEachIndexed { index, card -> Li { HeroCardLink(index + 1, card, run) } }
+        }
+    }
+}
+
+/** One status card: the whole card is a link to its section (no JS), run in the shell with it. */
+@Composable
+private fun HeroCardLink(number: Int, card: HeroCard, run: (String) -> Unit) {
+    A(href = "#${card.command}", attrs = {
+        classes("hcard")
+        if (card.status == CardStatus.RUNNING) classes("is-running")
+        onClick { event ->
+            event.preventDefault()
+            run(card.command)
+        }
+    }) {
+        Span(attrs = { classes("hc-top"); attr("aria-hidden", "true") }) {
+            Span(attrs = { classes("hc-num") }) { Text(number.toString().padStart(2, '0')) }
+            Span(attrs = { classes("hc-cmd") }) { Text("→ ${card.command}") }
+        }
+        Span(attrs = { classes("hc-title") }) { Text(card.title) }
+        Span(attrs = { classes("sr-only") }) { Text(": ") }
+        Span(attrs = { classes("hc-line") }) { Text(card.line) }
+        Span(attrs = { classes("sr-only") }) { Text(". Status: ") }
+        Span(attrs = { classes("hc-tag") }) { Text(card.status.label) }
     }
 }
 
