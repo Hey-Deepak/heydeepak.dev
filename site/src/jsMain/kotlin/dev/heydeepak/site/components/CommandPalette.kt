@@ -117,7 +117,7 @@ fun CommandPalette(actions: List<PaletteAction>, onClose: () -> Unit) {
                     }
                 }
                 if (matches.isEmpty()) {
-                    Li(attrs = { classes("palette-empty") }) { Text("No match. Try \"work\" or \"email\".") }
+                    Li(attrs = { classes("palette-empty") }) { Text("No match. Try “work” or “email”.") }
                 }
             }
             Div(attrs = { classes("palette-foot"); attr("aria-hidden", "true") }) {

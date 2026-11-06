@@ -28,8 +28,10 @@ object SiteMeta {
     const val TITLE = "Deepak Choudhary — SDE 3 · Tech Lead, Client SDKs"
     const val DESCRIPTION = "Deepak Choudhary, SDE 3 and Tech Lead for VideoSDK's Android, iOS, Flutter and " +
         "React Native SDKs on one shared core. 6+ years in mobile (Android); builds AI-agent tools."
-    // Longest the baked hero values stay hidden waiting for the app, so a failed bundle never hides facts.
-    const val ANIMATION_GRACE_MS = 1500
+    // Longest the baked hero text stays hidden for the app to stream it: hero text is readable by then, app or not.
+    const val TEXT_GRACE_MS = 1200
+    // Longest the baked decoration (prompts, map lines) waits for the app to animate it.
+    const val ANIMATION_GRACE_MS = 3000
 }
 
 kobweb {
@@ -55,7 +57,7 @@ kobweb {
                 meta(name = "twitter:card", content = "summary_large_image")
                 meta(name = "theme-color", content = "#080A10")
                 // Starts the fonts alongside the CSS so text rarely paints in a fallback font that shifts on swap.
-                listOf("/fonts/inter-latin.woff2", "/fonts/jetbrains-mono-latin.woff2").forEach { font ->
+                listOf("/fonts/jetbrains-mono-latin.woff2", "/fonts/jetbrains-mono-symbols.woff2").forEach { font ->
                     link(rel = "preload", href = font) {
                         attributes["as"] = "font"
                         attributes["type"] = "font/woff2"
@@ -65,13 +67,14 @@ kobweb {
                 link(rel = "apple-touch-icon", href = "/apple-touch-icon.png")
                 link(rel = "stylesheet", href = "/site.css")
                 script(type = "application/ld+json") { unsafe { raw(SiteMeta.PERSON_JSON_LD) } }
-                // Hides the baked hero values for the app to animate; shows them after the grace period if the app never took over.
+                // Hides the baked hero text (js-text) and decoration (js) for the app to animate; each grace period shows them if the app never took over.
                 script {
                     unsafe {
                         raw(
                             "if (!location.search.includes('_kobwebIsExporting')) { const root = document.documentElement; " +
-                                "root.classList.add('js'); setTimeout(() => { if (root.dataset.app !== 'ready') " +
-                                "root.classList.remove('js') }, ${SiteMeta.ANIMATION_GRACE_MS}) }",
+                                "root.classList.add('js', 'js-text'); const drop = (name) => { if (root.dataset.app !== 'ready') " +
+                                "root.classList.remove(name) }; setTimeout(() => drop('js-text'), ${SiteMeta.TEXT_GRACE_MS}); " +
+                                "setTimeout(() => drop('js'), ${SiteMeta.ANIMATION_GRACE_MS}) }",
                         )
                     }
                 }
