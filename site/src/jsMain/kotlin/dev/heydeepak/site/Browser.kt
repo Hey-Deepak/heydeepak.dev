@@ -21,20 +21,30 @@ external interface IntersectionObserverEntry {
     val target: Element
 }
 
-/** False while exporting (snapshot holds final content), for reduced motion, and for tabs opened in the background (throttled timers). */
+/** Whether decoration may animate (typing, map lines): false while exporting, for reduced motion, background tabs, or once the baked prompts were shown. */
 val LocalMotion = staticCompositionLocalOf { true }
+
+/** Whether hero output may stream in: [LocalMotion] and the head script still hiding the baked text (its shorter grace). */
+val LocalTextMotion = staticCompositionLocalOf { true }
 
 fun isExporting(): Boolean = AppGlobals.isExporting
 
+/** False while exporting, for reduced motion, and for tabs opened in the background. */
 fun motionAllowed(): Boolean =
     !isExporting() &&
         document.asDynamic().visibilityState != "hidden" &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-/** False once the head script's grace period has shown the baked hero values, so replaying the intro would hide them again. */
+/** False once the head script's grace period has shown the baked prompts, so typing them again would hide them. */
 fun bakedHeroHidden(): Boolean = document.documentElement?.classList?.contains("js") == true
 
-/** Stops the head script's grace timer from unhiding the baked hero; never set during export, or the snapshot would keep it. */
+/** False once the head script's shorter text grace has shown the baked hero output. */
+fun bakedTextHidden(): Boolean = document.documentElement?.classList?.contains("js-text") == true
+
+/** Milliseconds since navigation start. */
+fun msSinceLoad(): Double = window.performance.now()
+
+/** Stops the head script's grace timer from unhiding the baked prompts; never set during export, or the snapshot would keep it. */
 fun markAppReady() {
     if (!isExporting()) document.documentElement.asDynamic().dataset.app = "ready"
 }
@@ -59,14 +69,40 @@ fun focusWithoutScroll(element: HTMLElement) {
     element.asDynamic().focus(options)
 }
 
-fun scrollToSection(id: String, smooth: Boolean) {
-    val target = document.getElementById(id) as? HTMLElement ?: return
+/**
+ * Brings [entryId] to the top of the scrolling [containerId], growing the [spacerId] at the end so even
+ * a short last output can sit at the top, like a terminal you read from the command down.
+ */
+fun scrollEntryToTop(containerId: String, entryId: String, spacerId: String, smooth: Boolean) {
+    val box = document.getElementById(containerId) as? HTMLElement ?: return
+    val entry = document.getElementById(entryId) as? HTMLElement ?: return
+    val spacer = document.getElementById(spacerId) as? HTMLElement ?: return
+    spacer.style.height = "0px"
+    val top = entry.offsetTop - SCROLL_TOP_GAP_PX
+    // Measured from the spacer, not scrollHeight: scrollHeight never reports less than the box.
+    val bottomPadding = window.getComputedStyle(box).paddingBottom.removeSuffix("px").toDoubleOrNull() ?: 0.0
+    val missing = box.clientHeight - (spacer.offsetTop - top) - bottomPadding
+    spacer.style.height = "${missing.coerceAtLeast(0.0)}px"
     val options: dynamic = js("({})")
+    options.top = top
     options.behavior = if (smooth) "smooth" else "auto"
-    options.block = "start"
-    target.scrollIntoView(options)
-    window.history.replaceState(null, "", "#$id")
-    focusWithoutScroll(target)
+    box.asDynamic().scrollTo(options)
+}
+
+// Space kept above the command line when it's scrolled to the top.
+private const val SCROLL_TOP_GAP_PX = 12
+
+/** The URL hash without "#", or null. */
+fun currentHash(): String? = window.location.hash.removePrefix("#").ifBlank { null }
+
+/** Sets (or clears) the hash without the browser jumping to it. */
+fun setHash(id: String?) {
+    val url = if (id == null) window.location.pathname + window.location.search else "#$id"
+    window.history.replaceState(null, "", url)
+}
+
+fun focusById(id: String) {
+    (document.getElementById(id) as? HTMLElement)?.let(::focusWithoutScroll)
 }
 
 fun openInNewTab(url: String) {
