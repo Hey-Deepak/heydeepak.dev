@@ -83,6 +83,9 @@ private fun narrowFlow(): List<List<Seg>> = listOf(
     listOf(Seg("  └─▶ ", "m-line"), Seg("LLM wiki", "bd-node"), Seg(" (shared memory)", "m-dim")),
 )
 
+/** When `buddy demo`'s last line is in (site.css: 7 lines, 300 ms + 650 ms apart, 320 ms each): its next line waits this long. */
+const val DEMO_REPLAY_MS = 4600
+
 /** `buddy demo`: a clearly labelled replay; when [playing], the lines arrive one by one. */
 @Composable
 fun BuddyDemoOutput(playing: Boolean) {
@@ -102,6 +105,91 @@ fun BuddyDemoOutput(playing: Boolean) {
                     Span(attrs = { classes("demo-text") }) { Text(line.text) }
                 }
             }
+        }
+    }
+}
+
+// buddy build's pace: each pane types its lines one after another; panes run side by side.
+private const val BUILD_CHAR_MS = 16
+private const val BUILD_LINE_GAP_MS = 200
+// The three agents start a beat apart; the phone pane waits for all of them, then the shipped line.
+private val BUILD_AGENT_START_MS = listOf(200, 500, 1300)
+private const val BUILD_ASK_GAP_MS = 250
+private const val BUILD_DONE_GAP_MS = 200
+private const val BUILD_DONE_FADE_MS = 300
+
+/** One replay line: [text] starts typing at [atMs] and takes [durationMs]. */
+private class TimedLine(val text: String, val atMs: Int, val durationMs: Int)
+
+private fun typeLines(lines: List<String>, startMs: Int): List<TimedLine> {
+    var at = startMs
+    return lines.map { text ->
+        val duration = text.length * BUILD_CHAR_MS
+        TimedLine(text, at, duration).also { at += duration + BUILD_LINE_GAP_MS }
+    }
+}
+
+private fun List<TimedLine>.endMs() = last().let { it.atMs + it.durationMs }
+
+// Lazy: built from Content.kt's lists, whatever order the files initialise in.
+private val buildTimeline: List<List<TimedLine>> by lazy {
+    val agents = buildPanes.filterNot { it.phone }
+        .mapIndexed { index, pane -> pane to typeLines(pane.lines, BUILD_AGENT_START_MS[index]) }.toMap()
+    val askAt = agents.values.maxOf { it.endMs() } + BUILD_ASK_GAP_MS
+    buildPanes.map { pane -> agents[pane] ?: typeLines(pane.lines, askAt) }
+}
+
+private val buildDoneAtMs by lazy { buildTimeline.maxOf { it.endMs() } + BUILD_DONE_GAP_MS }
+
+/** When the replay's last line is in: its next line waits this long. */
+val buildReplayMs by lazy { buildDoneAtMs + BUILD_DONE_FADE_MS }
+
+/**
+ * `buddy build`: a labelled replay of how this page was made, as tmux panes (2×2 when wide, stacked
+ * otherwise). When [playing], every pane types at once; otherwise, and for reduced motion, it is the final state.
+ */
+@Composable
+fun BuddyBuildOutput(playing: Boolean) {
+    Div(attrs = {
+        classes("build")
+        if (playing) classes("is-playing")
+    }) {
+        P(attrs = { classes("build-note") }) { Text(BUILD_REPLAY_NOTE) }
+        Div(attrs = { classes("build-panes") }) {
+            buildPanes.forEachIndexed { index, pane ->
+                Div(attrs = {
+                    // Its agent's colour, the same as that agent's cursor.
+                    classes("bpane", "agent-${pane.name.substringBefore(' ')}")
+                    if (pane.phone) classes("is-phone")
+                    attr("role", "group")
+                    attr("aria-label", pane.name)
+                }) {
+                    // tmux draws the pane title in its top border.
+                    P(attrs = { classes("bpane-head"); attr("aria-hidden", "true") }) {
+                        Span(attrs = { classes("bpane-title") }) { Text(pane.name) }
+                    }
+                    Ul(attrs = { classes("bpane-lines") }) {
+                        buildTimeline[index].forEach { line ->
+                            Li(attrs = {
+                                classes("bl-line")
+                                if (line.text.startsWith("✓")) classes("is-ok")
+                                style {
+                                    property("--n", line.text.length.toString())
+                                    property("--at", "${line.atMs}ms")
+                                    property("--dur", "${line.durationMs}ms")
+                                }
+                            }) { Span(attrs = { classes("bl-text") }) { Text(line.text) } }
+                        }
+                    }
+                }
+            }
+        }
+        P(attrs = {
+            classes("build-done")
+            style { property("--at", "${buildDoneAtMs}ms") }
+        }) {
+            Span(attrs = { classes("build-ok"); attr("aria-hidden", "true") }) { Text(BUILD_DONE.take(1)) }
+            Text(BUILD_DONE.drop(1))
         }
     }
 }

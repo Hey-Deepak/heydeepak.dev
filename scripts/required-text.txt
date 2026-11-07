@@ -21,3 +21,4 @@ Multi-Agent Orchestration
 22 Android SDK releases in 11 months 4 SDKs on one shared core
 3M+ shoppers reached (Ubuy) 6+ years in mobile (Android)
 # sample data on a test setup
+# replay: how Buddy’s agents built this page

@@ -27,7 +27,7 @@ private const val CMD_ALL = "all"
 private const val WHOAMI_STREAM_DEADLINE_MS = 300.0
 private const val WHOAMI_START_MS = 60L
 // Keep equal to the CSS stream timelines (rows × stagger + fade).
-private const val WHOAMI_STREAM_MS = 450L
+private const val WHOAMI_STREAM_MS = 480L
 private const val MOTD_STREAM_MS = 400L
 
 /** A command that prints a section: its real command line, one line of help, and what to try next. */
@@ -45,9 +45,10 @@ class SectionCommand(
 val sectionCommands = listOf(
     SectionCommand(SiteSection.SHIP, "./ship --all-sdks --core shared", "4 SDKs on one shared core: the map, releases, commits", listOf("agents", "buddy", "work"), listOf("sdk", "./ship")),
     SectionCommand(SiteSection.AGENTS, "cat agents.md", "rusty, the SDK team’s Claude Code plugin, and voice agents", listOf("buddy", "career", "work"), listOf("rusty")),
-    SectionCommand(SiteSection.BUDDY, "man buddy", "what Buddy is and does, with its live buddy ps", listOf("buddy demo", "buddy screenshots", "projects"), listOf("buddy", "buddy --help", "buddy ps")),
-    SectionCommand(SiteSection.BUDDY_DEMO, "buddy demo", "a sample Buddy session, replayed", listOf("buddy screenshots", "buddy", "projects")),
-    SectionCommand(SiteSection.BUDDY_SCREENSHOTS, "buddy screenshots", "Buddy’s real screens, on sample data", listOf("buddy demo", "buddy", "projects"), listOf("screenshots", "buddy shots")),
+    SectionCommand(SiteSection.BUDDY, "man buddy", "what Buddy is and does, with its live buddy ps", listOf("buddy demo", "buddy screenshots", "buddy build"), listOf("buddy", "buddy --help", "buddy ps")),
+    SectionCommand(SiteSection.BUDDY_DEMO, "buddy demo", "a sample Buddy session, replayed", listOf("buddy screenshots", "buddy build", "buddy")),
+    SectionCommand(SiteSection.BUDDY_SCREENSHOTS, "buddy screenshots", "Buddy’s real screens, on sample data", listOf("buddy build", "buddy demo", "buddy"), listOf("screenshots", "buddy shots")),
+    SectionCommand(SiteSection.BUDDY_BUILD, "buddy build", "how Buddy’s agents built this page, replayed", listOf("buddy", "buddy demo", "projects"), listOf("build")),
     SectionCommand(SiteSection.PROJECTS, "ls -l ~/projects", "Buddy, Murmur, FaangX and recognition", listOf("buddy", "work", "contact"), listOf("ls", "ls -l", "ls ~/projects")),
     SectionCommand(SiteSection.WORK, "ls ./work", "three case studies as git diffs", listOf("career", "projects", "contact"), listOf("git show")),
     SectionCommand(SiteSection.CAREER, "git log --graph --oneline career", "every role, as a git log", listOf("work", "stack", "contact"), listOf("git log")),
@@ -86,8 +87,21 @@ object HelpOut : Output
 class SectionOut(val command: SectionCommand) : Output
 class TextOut(val text: String, val muted: Boolean = false) : Output
 
-/** One `$ command` and its output; [live] output was printed by the app and may animate. [anchor] is the export's deep-link id. */
-class Entry(val key: Int, val echo: String?, val output: Output, val live: Boolean, val boot: Boolean = false, val anchor: String? = null)
+/**
+ * One `$ command` and its output; [live] output was printed by the app and may animate, [built] output
+ * waits for the agents to build it. [anchor] is the export's deep-link id.
+ */
+class Entry(
+    val key: Int,
+    val echo: String?,
+    val output: Output,
+    val live: Boolean,
+    val boot: Boolean = false,
+    val anchor: String? = null,
+    val built: Boolean = false,
+) {
+    val elementId get() = anchor ?: "e-$key"
+}
 
 private sealed interface Action
 private class RunSection(val command: SectionCommand) : Action
@@ -116,9 +130,10 @@ private val completions = (chipCommands + sectionCommands.map { it.name } + sect
 
 /**
  * The shell's state: the transcript, the prompt's text and history. [motion] allows typing and
- * streaming; [full] starts with every section printed (the export, or a page whose baked transcript is already on screen).
+ * streaming; [full] starts with every section printed (the export, or a page whose baked transcript is already on screen);
+ * the [swarm], if any, builds each command's output.
  */
-class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: Boolean) {
+class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: Boolean, val swarm: Swarm? = null) {
     val entries = mutableStateListOf<Entry>()
     var input by mutableStateOf("")
     var busy by mutableStateOf(false)
@@ -145,9 +160,16 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
     }
 
     private fun add(echo: String?, output: Output, boot: Boolean = false, anchor: String? = null): Entry {
-        val entry = Entry(nextKey++, echo, output, live = motion && !boot, boot = boot, anchor = anchor)
+        val live = motion && !boot
+        val entry = Entry(nextKey++, echo, output, live, boot, anchor, built = live && swarm?.buildsOutput == true)
         entries += entry
         return entry
+    }
+
+    /** Hands the entries printed since [fromKey] to the agents. */
+    private fun printedSince(fromKey: Int) {
+        val printed = entries.filter { it.key >= fromKey && it.built }
+        swarm?.printed(printed.map { PrintedEntry(it.elementId, leadFor(it.output)) })
     }
 
     /** Enter in the prompt. */
@@ -177,6 +199,7 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
     }
 
     fun execute(line: String) {
+        val fromKey = nextKey
         history.remove(line)
         history += line
         recalled = -1
@@ -221,6 +244,7 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
             }
         }
         scrollTarget = first.key
+        printedSince(fromKey)
     }
 
     /** `clear` / Ctrl+L: an empty scrollback, then the motd again, so nobody is left on a blank screen. */
@@ -232,6 +256,7 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
         setHash(null)
         announcement = "Cleared"
         scrollTarget = motd.key
+        printedSince(motd.key)
     }
 
     fun historyUp() {
@@ -257,7 +282,11 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
             else -> {
                 val common = matches.reduce { acc, name -> acc.commonPrefixWith(name) }
                 if (common.length > prefix.length) input = common
-                else scrollTarget = add(input, TextOut(matches.joinToString("   "), muted = true)).key
+                else {
+                    val listed = add(input, TextOut(matches.joinToString("   "), muted = true))
+                    scrollTarget = listed.key
+                    printedSince(listed.key)
+                }
             }
         }
         return true
@@ -270,19 +299,34 @@ class ShellState(private val scope: CoroutineScope, val motion: Boolean, full: B
     }
 }
 
-/** The terminal: transcript, prompt and chips. Boots with whoami and the motd. */
+/** The agent who leads an output's build: a Claude Code session named for the section, or Buddy itself. */
+private fun leadFor(output: Output): String = when (output) {
+    is SectionOut -> SwarmNames.claude(output.command.section.id)
+    WhoamiOut -> SwarmNames.claude(CMD_WHOAMI)
+    MotdOut -> SwarmNames.claude("motd")
+    else -> SwarmNames.BUDDY
+}
+
+/**
+ * The terminal: transcript, prompt and chips. Boots with whoami and the motd: typed and streamed, or,
+ * when the shell's swarm builds the first screen, shown as is for the agents to build.
+ */
 @Composable
 fun Shell(shell: ShellState) {
+    val swarm = shell.swarm
     val motion = LocalMotion.current
-    val textMotion = LocalTextMotion.current
+    // The agents build the first screen themselves; otherwise it is typed and streamed.
+    val swarmBoot = remember { swarm?.building == true }
+    val bootMotion = motion && !swarmBoot
+    val textMotion = LocalTextMotion.current && !swarmBoot
     val streamWhoami = remember { textMotion && msSinceLoad() <= WHOAMI_STREAM_DEADLINE_MS }
-    var whoamiTyped by remember { mutableStateOf(if (motion && streamWhoami) 0 else CMD_WHOAMI.length) }
-    var motdTyped by remember { mutableStateOf(if (motion && textMotion) 0 else CMD_MOTD.length) }
+    var whoamiTyped by remember { mutableStateOf(if (bootMotion && streamWhoami) 0 else CMD_WHOAMI.length) }
+    var motdTyped by remember { mutableStateOf(if (bootMotion && textMotion) 0 else CMD_MOTD.length) }
     var whoami by remember { mutableStateOf(if (streamWhoami) Reveal.WAITING else Reveal.DONE) }
-    var motd by remember { mutableStateOf(if (motion && textMotion) Reveal.WAITING else Reveal.DONE) }
+    var motd by remember { mutableStateOf(if (bootMotion && textMotion) Reveal.WAITING else Reveal.DONE) }
 
     LaunchedEffect(Unit) {
-        if (motion) {
+        if (bootMotion) {
             if (streamWhoami) {
                 delay(WHOAMI_START_MS)
                 typeCommand(CMD_WHOAMI, QUICK_PACE) { whoamiTyped = it }
@@ -319,6 +363,7 @@ fun Shell(shell: ShellState) {
         }
         Div(attrs = { id(TRANSCRIPT_END_ID); attr("aria-hidden", "true") })
     }
+    swarm?.let { SwarmBar(it) }
     Div(attrs = { classes("sr-only"); attr("role", "status"); attr("aria-live", "polite") }) { Text(shell.announcement) }
     PromptLine(shell)
     Chips(shell)
@@ -329,7 +374,7 @@ private fun EntryView(entry: Entry, shell: ShellState, whoamiTyped: Int, whoami:
     val bootWhoami = entry.boot && entry.output == WhoamiOut
     val bootMotd = entry.boot && entry.output == MotdOut
     Div(attrs = {
-        id(entry.anchor ?: "e-${entry.key}")
+        id(entry.elementId)
         classes("entry")
         if (entry.boot) classes("is-boot")
         if (isExporting()) attr("data-static", "")
@@ -344,11 +389,12 @@ private fun EntryView(entry: Entry, shell: ShellState, whoamiTyped: Int, whoami:
         Div(attrs = {
             classes("out")
             if (entry.live) classes("is-playing")
+            if (entry.built) classes("ag-fast")
         }) {
             when (val output = entry.output) {
                 LastLoginOut -> P(attrs = { classes("last-login") }) { Text(LAST_LOGIN) }
                 // Only the boot copy carries the page's h1.
-                WhoamiOut -> WhoAmI(if (bootWhoami) whoami else Reveal.DONE, withTitle = bootWhoami)
+                WhoamiOut -> WhoAmI(if (bootWhoami) whoami else Reveal.DONE, withTitle = bootWhoami, run = shell::runTyped)
                 MotdOut -> MotdOutput(shell, if (bootMotd) motd else Reveal.DONE)
                 HelpOut -> HelpOutput(shell)
                 is SectionOut -> SectionOutput(output.command, entry.live, shell)
@@ -378,8 +424,15 @@ private fun SectionOutput(command: SectionCommand, live: Boolean, shell: ShellSt
         SiteSection.STATS -> StatsOutput()
         SiteSection.CONTACT -> ContactOutput()
         SiteSection.BUDDY_SCREENSHOTS -> BuddyScreenshotsOutput()
+        SiteSection.BUDDY_BUILD -> BuddyBuildOutput(playing = live)
     }
-    NextLine(command.next, shell)
+    // A replay's next line waits for its last line.
+    val replayMs = when (section) {
+        SiteSection.BUDDY_DEMO -> DEMO_REPLAY_MS
+        SiteSection.BUDDY_BUILD -> buildReplayMs
+        else -> null
+    }
+    NextLine(command.next, shell, delayMs = if (live) replayMs else null)
 }
 
 /** A clickable command inside output: a link to its deep-link anchor (works without JS), run in the shell with it. */
@@ -408,8 +461,14 @@ private fun CmdLink(name: String, shell: ShellState, label: String = name) {
 }
 
 @Composable
-private fun NextLine(next: List<String>, shell: ShellState) {
-    P(attrs = { classes("next") }) {
+private fun NextLine(next: List<String>, shell: ShellState, delayMs: Int? = null) {
+    P(attrs = {
+        classes("next")
+        delayMs?.let {
+            style { property("animation-delay", "${it}ms") }
+            attr(NEXT_WAIT_ATTR, it.toString())
+        }
+    }) {
         Span(attrs = { classes("next-lead"); attr("aria-hidden", "true") }) { Text("→ ") }
         Span(attrs = { classes("sr-only") }) { Text("Next: ") }
         CmdList(next.map(::CmdItem), shell)
@@ -430,17 +489,16 @@ private fun CmdList(items: List<CmdItem>, shell: ShellState) {
 
 private class MotdRow(val key: String, val text: String, val go: List<CmdItem>)
 
-/** `cat /etc/motd`: the highlights, each one click from its full output. */
+/** `cat /etc/motd`: what whoami's cards don't already show, each one click from its full output. */
 @Composable
 private fun MotdOutput(shell: ShellState, reveal: Reveal) {
-    val releases = proofStats[0]
-    val sdks = proofStats[1]
-    val rusty = Rusty.counts.joinToString(DOT_SEP) { "${it.first} ${it.second}" }
     val rows = listOf(
-        MotdRow("sdk", "${sdks.value} ${sdks.label}$DOT_SEP${releases.value} ${releases.label}", listOf(CmdItem("ship"))),
-        MotdRow("agents", "${Rusty.NAME}: $rusty$DOT_SEP${Rusty.ADOPTION_PRS} PRs in its first 4 weeks", listOf(CmdItem("agents"))),
-        // The screenshots sit one click from the first screen.
-        MotdRow("buddy", BuddyInfo.ONE_LINE, listOf(CmdItem("buddy"), CmdItem("buddy screenshots", "screenshots"))),
+        // whoami's Buddy card opens man buddy; its sub-commands sit here.
+        MotdRow(
+            "buddy",
+            "a replay of how its agents built this page",
+            listOf(CmdItem("buddy build", "build"), CmdItem("buddy demo", "demo"), CmdItem("buddy screenshots", "screenshots")),
+        ),
         MotdRow("projects", (listOf(buddyProject) + sideProjects).joinToString(DOT_SEP) { it.name }, listOf(CmdItem("projects"))),
     )
     Div(attrs = { classes("motd"); revealState(reveal) }) {

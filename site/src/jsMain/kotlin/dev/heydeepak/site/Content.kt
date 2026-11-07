@@ -21,6 +21,7 @@ enum class SiteSection(val id: String, val title: String) {
     BUDDY("buddy", "Buddy"),
     BUDDY_DEMO("buddy-demo", "Buddy: a sample session"),
     BUDDY_SCREENSHOTS("buddy-screenshots", "Buddy: screenshots"),
+    BUDDY_BUILD("buddy-build", "Buddy: how this page was built"),
     PROJECTS("projects", "Building in public"),
     WORK("work", "Selected work"),
     CAREER("career", "Career"),
@@ -41,7 +42,7 @@ const val HERO_HEADLINE_TAIL = "and build AI-agent tools."
 const val HERO_PITCH = "6+ years in mobile (Android). I lead VideoSDK’s 4 client SDKs — Android, iOS, Flutter and " +
     "React Native — on one shared core, and build AI-agent tools for the SDK team."
 
-const val LAST_UPDATED = "2026-11-06"
+const val LAST_UPDATED = "2026-11-07"
 
 const val PHOTO_SRC = "/photo.jpg"
 const val PHOTO_ALT = "Deepak Choudhary"
@@ -260,6 +261,21 @@ val buddyProject = Project(
     teaser = "Talk to it from your phone; a daemon on your PC spawns and supervises Claude Code agents.",
 )
 
+/** A status card's tag; [RUNNING] is drawn amber, like Buddy's running dot. */
+enum class CardStatus(val label: String) { SHIPPED("shipped"), IN_USE("in use"), RUNNING("running") }
+
+/** A numbered status card beside whoami; [command] is what a click runs. Words only from the facts in this file. */
+class HeroCard(val title: String, val line: String, val status: CardStatus, val command: String)
+
+val heroCards = listOf(
+    // Resume: Android 3.0, iOS 4.0, Flutter 5.0 and RN 2.0 shipped the same day.
+    HeroCard(SHARED_CORE_TITLE.removeSuffix("."), "$SHARED_CORE_SHIPPED the same day", CardStatus.SHIPPED, "ship"),
+    // In use: 4 engineers merged 103 PRs into it in its first 4 weeks.
+    HeroCard(Rusty.NAME, Rusty.WHAT, CardStatus.IN_USE, "agents"),
+    // Cut from BuddyInfo.ONE_LINE; "running" is its project status.
+    HeroCard(buddyProject.name, "runs AI agents on your PC", CardStatus.RUNNING, "buddy"),
+)
+
 const val BUDDY_PS_TITLE = "buddy — supervising Claude Code agents"
 
 /**
@@ -294,6 +310,45 @@ val buddyDemo = listOf(
     DemoLine(DemoSpeaker.PHONE, "phone", "✓ approved"),
     DemoLine(DemoSpeaker.AGENT, "login-crash", "fixed · tests pass"),
     DemoLine(DemoSpeaker.BUDDY, "buddy", "“Done: the crash is fixed and the tests pass.”"),
+)
+
+/**
+ * The swarm's cursors: real Buddy roles and tools, and the Claude Code sessions Buddy launches.
+ * Never a career or job agent. Labels are words only: no counts, sizes or times.
+ */
+object SwarmNames {
+    const val BUDDY = "buddy"
+    const val BUILDER = "website-builder"
+    const val DESIGNER = "designer"
+    const val CHECKS = "checks"
+    const val SIMPLIFY = "simplify"
+    const val CLAUDE = "claude"
+    fun claude(section: String) = "$CLAUDE · $section"
+}
+
+const val SWARM_BUILDING = "agents are building this page"
+const val SWARM_BUILDING_SHORT = "building this page"
+const val SWARM_BUILT = "✓ built by Buddy’s agents"
+
+/** One tmux pane of the `buddy build` replay: who typed in it ([phone] picks the colour) and what, in order. */
+class BuildPane(val name: String, val lines: List<String>, val phone: Boolean = false)
+
+const val BUILD_REPLAY_NOTE = "# replay: how Buddy’s agents built this page"
+const val BUILD_DONE = "✓ shipped to heydeepak.dev"
+
+// How this site is made (CLAUDE.md's update loop); words only: no counts, scores or times. Lines fit 30 columns (a 320px pane).
+// Agent panes are named for their cursors, so each cursor follows its own pane.
+val buildPanes = listOf(
+    BuildPane(
+        SwarmNames.BUILDER,
+        listOf("reading the resume …", "writing whoami", "writing the ship map", "writing work, career, about …", "✓ facts match the resume"),
+    ),
+    BuildPane(
+        SwarmNames.DESIGNER,
+        listOf("applying the Hallmark rules", "Terminal Warmth tokens", "one font: JetBrains Mono", "✓ still one terminal"),
+    ),
+    BuildPane(SwarmNames.CHECKS, listOf("export … ok", "content checks … ok", "link checks … ok", "✓ all pass")),
+    BuildPane("you · phone", listOf("buddy: ready to ship?", "[ allow ] [ deny ]", "✓ approved from the phone"), phone = true),
 )
 
 /** A real Buddy screen in `public/buddy/`, captioned "[area] · [caption]"; adding one is a file plus an entry here. */

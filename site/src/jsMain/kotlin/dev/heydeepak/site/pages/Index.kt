@@ -26,12 +26,18 @@ fun HomePage() {
     val textMotion = remember { promptMotion && bakedTextHidden() }
     // The export prints every section; so does the app when the grace timer already showed the baked transcript.
     val fullTranscript = remember { isExporting() || !bakedHeroHidden() }
+    val swarm = remember { swarmFor(motion, textMotion) }
     DisposableEffect(Unit) {
         markAppReady()
         onDispose { }
     }
+    // After the first render, so the agents find the blocks they build.
+    DisposableEffect(swarm) {
+        swarm?.start()
+        onDispose { swarm?.dispose() }
+    }
     val scope = rememberCoroutineScope()
-    val shell = remember { ShellState(scope, promptMotion, fullTranscript) }
+    val shell = remember { ShellState(scope, promptMotion, fullTranscript, swarm) }
     var paletteOpen by remember { mutableStateOf(false) }
     var toast by remember { mutableStateOf<Toast?>(null) }
 
@@ -68,12 +74,13 @@ fun HomePage() {
         isPaletteOpen = { paletteOpen },
         setPaletteOpen = { paletteOpen = it },
         onClear = { shell.clear() },
+        onEscape = { swarm?.skip() },
     )
 
     A(href = "#$SHELL_INPUT_ID", attrs = { classes("skip-link") }) { Text("Skip to the command prompt") }
     Div(attrs = { classes("term-page") }) {
         Main(attrs = { id(MAIN_ID); classes("term"); attr("tabindex", "-1") }) {
-            TitleBar()
+            TitleBar(swarm)
             CompositionLocalProvider(LocalMotion provides promptMotion, LocalTextMotion provides textMotion) {
                 Shell(shell)
             }
@@ -88,11 +95,11 @@ fun HomePage() {
 }
 
 /**
- * ⌘K / Ctrl+K toggles the palette, `/` opens it, Esc closes it, Ctrl+L clears the screen. Typing a
- * printable key while nothing has focus goes to the prompt, like a terminal that's always listening.
+ * ⌘K / Ctrl+K toggles the palette, `/` opens it, Esc closes it (or skips the agents' build), Ctrl+L clears
+ * the screen. Typing a printable key while nothing has focus goes to the prompt, like a terminal that's always listening.
  */
 @Composable
-private fun GlobalShortcuts(isPaletteOpen: () -> Boolean, setPaletteOpen: (Boolean) -> Unit, onClear: () -> Unit) {
+private fun GlobalShortcuts(isPaletteOpen: () -> Boolean, setPaletteOpen: (Boolean) -> Unit, onClear: () -> Unit, onEscape: () -> Unit) {
     DisposableEffect(Unit) {
         val listener: (Event) -> Unit = listener@{ event ->
             val key = event as? KeyboardEvent ?: return@listener
@@ -106,6 +113,7 @@ private fun GlobalShortcuts(isPaletteOpen: () -> Boolean, setPaletteOpen: (Boole
                     setPaletteOpen(true)
                 }
                 key.key == "Escape" && isPaletteOpen() -> setPaletteOpen(false)
+                key.key == "Escape" -> onEscape()
                 key.ctrlKey && key.key.equals("l", ignoreCase = true) && !isPaletteOpen() && !isTyping() -> {
                     key.preventDefault()
                     onClear()
