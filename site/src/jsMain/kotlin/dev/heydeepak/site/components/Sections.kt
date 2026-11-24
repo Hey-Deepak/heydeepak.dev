@@ -146,7 +146,7 @@ fun StackOutput() {
 @Composable
 fun ProjectsOutput() {
     Div(attrs = { classes("projects") }) {
-        ProjectEntry(buddyProject, featured = true)
+        ProjectEntry(buddyProject, featured = true, page = HeyBuddy.homeLink)
         sideProjects.forEach { ProjectEntry(it) }
     }
     Prompt("cat recognition.txt", variant = "prompt-sub")
@@ -160,9 +160,9 @@ fun ProjectsOutput() {
     }
 }
 
-/** A project as an `ls -l` row, its details indented under the name. */
+/** A project as an `ls -l` row, its details indented under the name; [page] is its page on this site, if any. */
 @Composable
-private fun ProjectEntry(project: Project, featured: Boolean = false) {
+private fun ProjectEntry(project: Project, featured: Boolean = false, page: SiteLink? = null) {
     Article(attrs = {
         classes("project")
         if (featured) classes("is-featured")
@@ -190,6 +190,16 @@ private fun ProjectEntry(project: Project, featured: Boolean = false) {
                 Span(attrs = { classes("tlink-lead"); attr("aria-hidden", "true") }) { Text("→") }
                 Text(project.urlLabel)
                 Span(attrs = { classes("tlink-arrow"); attr("aria-hidden", "true") }) { Text("↗") }
+            }
+            // Its own line; the comment may wrap, the link never does.
+            page?.let { link ->
+                Div {
+                    A(href = link.href, attrs = { classes("tlink", "project-link") }) {
+                        Span(attrs = { classes("tlink-lead"); attr("aria-hidden", "true") }) { Text("→") }
+                        Text(link.label)
+                    }
+                    Span(attrs = { classes("t-comment") }) { Text("  ${link.note}") }
+                }
             }
         }
     }

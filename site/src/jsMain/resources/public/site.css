@@ -1417,3 +1417,73 @@ html.ag-you-on, html.ag-you-on * { cursor: none; }
 @media (hover: none) {
   .palette-foot { display: none; }
 }
+
+/* ---------- /heybuddy: the Hey Buddy page (hb-*); last, so it wins over the shared rules it reuses ---------- */
+.titlebar.hb-titlebar { padding-inline: var(--space-sm); }
+.hb .entry { scroll-margin-top: var(--space-sm); }
+.hb .entry + .entry { margin-top: var(--space-xl); }
+@media (prefers-reduced-motion: no-preference) {
+  .hb { scroll-behavior: smooth; }
+}
+/* Text left, the phone right once the output is wide; stacked otherwise. */
+.hb-hero { container-type: inline-size; }
+.hb-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); align-items: start; }
+@container (min-width: 50rem) {
+  .hb-hero-grid { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-xl); }
+}
+.hb-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1.5ch; margin-top: var(--space-2xs); }
+.hb-meta .ck { min-width: 8ch; }
+
+/* The phone: a phone-shaped frame (no fake hardware), a sample terminal and the app's key row. */
+.hb-phone-wrap { width: min(16rem, 100%); }
+.hb-phone {
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 1.6rem;
+  background: var(--card);
+  box-shadow: 0 30px 70px -30px var(--shadow), 0 0 40px -18px color-mix(in oklch, var(--amber) 40%, transparent);
+}
+.hb-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 21rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  background: var(--bg);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.hb-status { display: flex; justify-content: space-between; gap: 1ch; padding: 0.55rem 0.9rem 0.45rem; border-bottom: 1px solid var(--border); background: var(--input); color: var(--mid); white-space: nowrap; }
+.hb-live { color: var(--amber); }
+.hb-lines { flex: 1; display: grid; align-content: start; gap: 0.15rem; padding: 0.7rem 0.9rem; }
+.hb-line { color: var(--text); overflow-wrap: anywhere; }
+.hb-line.is-tool { color: var(--mid); }
+.hb-dot { color: var(--green); }
+.hb-line.is-ask { margin-top: 0.35rem; color: var(--amber); font-weight: 700; }
+.hb-line.is-choice { color: var(--teal); white-space: pre; }
+.hb-keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; padding: 0.5rem; border-top: 1px solid var(--border); background: var(--input); }
+.hb-key { display: grid; place-items: center; min-height: 1.9rem; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--card); color: var(--text); font-weight: 600; white-space: nowrap; }
+.hb-note { margin-top: var(--space-2xs); color: var(--mid); font-size: var(--text-micro); }
+
+/* Setup: an ordered list, its numbers drawn as [n] and left out of what screen readers read (the list is ordered). */
+.hb-steps { display: grid; gap: var(--space-md); max-width: 80ch; counter-reset: hb-step; }
+.hb-step { display: grid; grid-template-columns: 4ch minmax(0, 1fr); column-gap: 1ch; counter-increment: hb-step; }
+.hb-step::before {
+  content: "[" counter(hb-step) "]";
+  content: "[" counter(hb-step) "]" / "";
+  font: 700 1.0625rem/1.6 var(--font-mono);
+  color: var(--amber);
+  text-shadow: var(--glow-amber);
+}
+.hb-step-title { font: 700 1.0625rem/1.6 var(--font-mono); color: var(--text); }
+.hb-step .say { margin-top: var(--space-3xs); }
+
+.hb-builds { display: grid; gap: var(--space-3xs); margin-top: var(--space-xs); }
+.hb-build { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) 2ch; min-height: var(--hit); }
+.hb-status-word { color: var(--mid); }
+.hb-status-word.is-beta { color: var(--amber); text-shadow: var(--glow-amber); }
+
+.hb-faq { display: grid; gap: var(--space-sm); max-width: 80ch; }
+.hb-faq .md-h { margin-top: 0; }
+.hb-faq dd { margin-top: var(--space-3xs); }

@@ -42,7 +42,7 @@ const val HERO_HEADLINE_TAIL = "and build AI-agent tools."
 const val HERO_PITCH = "6+ years in mobile (Android). I lead VideoSDK’s 4 client SDKs — Android, iOS, Flutter and " +
     "React Native — on one shared core, and build AI-agent tools for the SDK team."
 
-const val LAST_UPDATED = "2026-11-07"
+const val LAST_UPDATED = "2026-11-25"
 
 const val PHOTO_SRC = "/photo.jpg"
 const val PHOTO_ALT = "Deepak Choudhary"
