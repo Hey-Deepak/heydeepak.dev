@@ -22,3 +22,4 @@ Multi-Agent Orchestration
 3M+ shoppers reached (Ubuy) 6+ years in mobile (Android)
 # sample data on a test setup
 # replay: how Buddy’s agents built this page
+heydeepak.dev/heybuddy
